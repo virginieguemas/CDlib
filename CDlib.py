@@ -210,7 +210,7 @@ def Thetavstar(thetastar, qstar, theta, q) :
 
    return thetavstar
 ################################################################################
-def PSI(z, Lmo, stab='beljaars-holtslag', unstab='businger-dyer') :
+def PSI(z, Lmo, stab=None, unstab=None) :
    """
    This function computes a stability correction as a function of Monin-Obukhov length. It takes four arguments:
    - z = height
@@ -218,36 +218,42 @@ def PSI(z, Lmo, stab='beljaars-holtslag', unstab='businger-dyer') :
    - stab = formulation for stable regimes : 'webb'/'large-pond'/'lettau'/'beljaars-holtslag'/'grachev'
    - unstab = formulation for unstable regimes : 'businger-dyer'
 
-   Author : Virginie Guemas - September 2020 
+
+   Author : Virginie Guemas - October 2020 
+   Modified : Sebastien Blein - November 2020  (add stable function of Businger Dyer)
    """
 
    zeta = z/Lmo
   
-   if unstab == 'businger-dyer':
-     phiM = (1 - 16*zeta)**(-0.25)
+   if stab == 'businger-dyer':
+     phiM = 1 + 5*zeta
      phiH = (1 - 16*zeta)**(-0.5)
 
-     psiM = np.where (zeta<0, 2*np.log((1+phiM**(-1))/2) + np.log((1+phiM**(-2))/2) - 2*np.arctan(phiM**(-1)) + np.pi/2, 0.)
-     psiH = np.where (zeta<0, 2*np.log((1+phiH**(-1))/2), 0.)
+     #psiM = np.where (zeta>0, 2*np.log((1+phiM**(-1))/2) + np.log((1+phiM**(-2))/2) - 2*np.arctan(phiM**(-1)) + np.pi/2, 0.)
+     psiM = np.where (zeta>0, -5*zeta,0.)
+     psiH = np.where (zeta>0, 2*np.log((1+phiH**(-1))/2), 0.)
    else:
      sys.exit('This option for unstable cases is not coded yet.')
 
-   if stab == 'webb':
+   if unstab == 'webb':
      psiM = np.where (zeta>0, -5*zeta, psiM)
      psiH = np.where (zeta>0, -5*zeta, psiM)
-   elif stab == 'large-pond':
+   elif unstab == 'large-pond':
      psiM = np.where (zeta>0, -7*zeta, psiM)
      psiH = np.where (zeta>0, -7*zeta, psiM)
-   elif stab == 'lettau':
+   elif unstab == 'lettau':
      x = 1 + 4.5*zeta
 
      psiM = np.where (zeta>0, np.log((x**0.5+1)/2) + 2*np.log((x**0.25+1)/2) -2*np.arctan(x**0.25) + np.pi/2 + 4/3*(1-x**0.75), psiM)
      psiH = np.where (zeta>0, 2*np.log((x**0.25+1)/2) -2*(x**1.5/3 + x**0.5 - 4/3), psiH)
-   elif stab == 'beljaars-holtslag':
-     psi = -3.75/0.35 - 0.7*zeta + 3.75/0.35*np.exp(-0.35*zeta) -0.75*zeta*np.exp(-0.35*zeta)
-     psiM = np.where (zeta>0, psi, psiM)
-     psiH = np.where (zeta>0, psi, psiH)
-   elif stab == 'grachev':
+   elif unstab == 'beljaars-holtslag':
+     #a,b,c,d = 0.7,0.75,5.,0.35
+     a,b,c,d = 1.,0.667,5.,0.35
+     psi = -(a * zeta + b*(zeta - c/d) * np.exp(-d * zeta) + b*c/d)
+
+     psiM = np.where (zeta<0, psi, psiM)
+     psiH = np.where (zeta<0, psi, psiH)
+   elif unstab == 'grachev':
      x = (zeta+1)**(1/3)
      psiM = np.where (zeta>0, -19.5*(x-1) + 3.25*0.3**(1/3)*(2*np.log((x+0.3**(1/3))/(1+0.3**(1/3))) - np.log((x**2-0.3**(1/3)*x+0.3**(2/3))/(1-0.3**(1/3)+0.3**(2/3))) +2*np.sqrt(3)*(np.arctan((2*x-0.3**(1/3))/(np.sqrt(3)*0.3**(1/3))) -np.arctan((2-0.3**(1/3))/(np.sqrt(3)*0.3**(1/3))))) , psiM)
      psiH = np.where (zeta>0, -2.5*np.log(1+3*zeta+zeta**2) +5/(2*np.sqrt(5))*(np.log((2*zeta+3-np.sqrt(5))/(2*zeta+3+np.sqrt(5))) -np.log((3-np.sqrt(5))/(3+np.sqrt(5)))), psiH)
@@ -255,6 +261,7 @@ def PSI(z, Lmo, stab='beljaars-holtslag', unstab='businger-dyer') :
      sys.exit('This option for stable cases is not coded yet.')
    
    return (psiM,psiH)
+
 ################################################################################
 def F(Rb, CDN, z, var='momentum', author='Louis') :
    """
