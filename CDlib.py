@@ -229,6 +229,8 @@ def PSI(z, Lmo, stab=None, unstab=None) :
    Modified : Sebastien Blein - December 2020 (correct Beljaars and Holtslag 1991)
               Virginie Guemas - December 2020 (add kansas, fairall and holtslag-bruin)
    """
+   np.seterr(invalid='ignore')
+
    if stab is None or unstab is None:
        sys.exit('Stability correction type has to be specified (e.g.: stab=\'beljaars-holtslag\' and unstab=\'businger-dyer\')')
 
