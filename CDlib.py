@@ -247,15 +247,15 @@ def PSI(z, Lmo, stab=None, unstab=None) :
      phiH = 0.74*(1 - 9*zeta)**(-0.5)
 
      psiM = np.where (zeta<0, 2*np.log((1+phiM**(-1))/2) + np.log((1+phiM**(-2))/2) - 2*np.arctan(phiM**(-1)) + np.pi/2, 0.)
-     psiH = np.where (zeta<0, 1.74*np.log((1+0.74*phiH**(-1))/1.74)+0.26*ln((1-0.74*phiH**(-1))/0.26), 0.)
+     psiH = np.where (zeta<0, 1.74*np.log((1+0.74*phiH**(-1))/1.74)+0.26*np.log((1-0.74*phiH**(-1))/0.26), 0.)
    ################################
    elif unstab == 'fairall':
-     y = (1 - 12.87*zeta)^(1/3) 
+     y = (1 - 12.87*zeta)**(1/3) 
 
      psi = np.where (zeta<0, 1.5*np.log((y**2+y+1)/3) - np.sqrt(3)*np.arctan((2*y+1)/np.sqrt(3)) + np.pi/np.sqrt(3), 0.)
 
-     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, unstab = 'kansas')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
-     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, unstab = 'kansas')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'kansas')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'kansas')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
    ################################  
    elif  unstab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
