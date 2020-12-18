@@ -90,7 +90,7 @@ def Z0(u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
    - the temperature T (in Kelvin)  
 
    Author : Virginie Guemas - October 2020 
-   Modified : Virginie Guemas - December 2020 - Smith (1988) formula for bulk parameterizations
+   Modified : Virginie Guemas - December 2020 - Option Smith (1988) formula used in COARE 2.5 (Fairall, 1996) 
    """
 
    if CDN is not None and z is not None:
@@ -120,10 +120,15 @@ def ZS(deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None, rstar=None,
    - the roughness Reynolds number rstar,
    - the friction velocity ustar (in m/s),
    - s = 'T'/'Q' for heat/humidity (parameters a and b differ),
-   or a function of (Brutsaert,1982):
    or as a function of (Andreas, 1987):
+   - the roughness Reynolds number rstar,
+   - the aerodynamic roughness length z0 (in m),
+   - s = 'T'/'Q' for heat/humidity (parameters a and b differ),
+   or a function of (Brutsaert,1982):
 
    Author : Virginie Guemas - October 2020 
+   Modified : Virginie Guemas - December 2020 - Option LKB (Liu et al, 1979) used in COARE2.5 (Fairall et al 1996) 
+                                                Option Andreas (1987)
    """
 
    if CSN is not None and z0 is not None and z is not None:
@@ -144,8 +149,21 @@ def ZS(deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None, rstar=None,
        sys.exit('s should be T for temperature or Q for humidity')
 
      zs = meteolib.NU(T)/ustar* a*rstar**b  
+   elif rstar is not None and z0 is not None:
+     if s == 'T':
+       b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.25, np.where(rstar<2.5, 0.149, 0.317)))
+       b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.55, -0.565)))
+       b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.183)))
+     elif s == 'Q':
+       b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.61, np.where(rstar<2.5, 0.351, 0.396)))
+       b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.628, -0.512)))
+       b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.18)))
+     else:
+       sys.exit('s should be T for temperature or Q for humidity')
+     
+     zs = z0*np.exp(b0 + b1*np.log(rstar) + b2*np.log(rstar)**2)
    else:
-     sys.exit('zs can be computed either from (CSN,z0,z) or from (deltas,sstar,psi,z)')
+     sys.exit('zs can be computed either from (CSN,z0,z) or from (deltas,sstar,psi,z) or from (rstar,ustar,T,s) or from (rstar,z0,s)')
 
    return zs
 ################################################################################
