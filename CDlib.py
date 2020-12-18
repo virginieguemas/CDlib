@@ -87,7 +87,7 @@ def Z0(u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
    or as a function of (Smith, 1988):
    - the alpha = 0.011 as in Charnock (1955) or alpha = 0.013 as in Zeng et al (1998)  
    - the friction velocity ustar (in m/s),
-   - the temperature T (Kelvin)  
+   - the temperature T (in Kelvin)  
 
    Author : Virginie Guemas - October 2020 
    Modified : Virginie Guemas - December 2020 - Smith (1988) formula for bulk parameterizations
@@ -104,18 +104,23 @@ def Z0(u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
 
    return z0
 ################################################################################
-def ZS(deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None) :
+def ZS(deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None, rstar=None, ustar=None, T=None, s=None) :
    """
    This function returns the scalar roughness length (in m) for either heat or humidity as a function of :
    - the neutral bulk scalar exchange coefficient CHN (for heat) or CQN (for momentum),
    - the aerodyamic roughness length z0 (in m),
-   - the heigth z (in m),
+   - the height z (in m),
    or as a function of (the relation between the observed scalar profile and flux):
    - the height z (in m),
    - the difference in scalar deltas between height z and the surface (either potential temperature in Kelvin or specific humidity in kg/kg)
    - the scaling parameter sstar (for either temperature thetastar or humidity qstar),
-   - the additive stability correction psi.
-   or as a function of (Brutsaert,1982):
+   - the additive stability correction psi,
+   or as a function of (Liu et al 1979 used in Fairall, 1996):
+   - the temperature T (in Kelvin),
+   - the roughness Reynolds number rstar,
+   - the friction velocity ustar (in m/s),
+   - s = 'T'/'Q' for heat/humidity (parameters a and b differ),
+   or a function of (Brutsaert,1982):
    or as a function of (Andreas, 1987):
 
    Author : Virginie Guemas - October 2020 
@@ -125,6 +130,20 @@ def ZS(deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None) :
      zs = z/np.exp(k**2/(ln(z/z0)*CSN))
    elif z is not None and deltas is not None and sstar is not None and psi is not None: 
      zs = z/np.exp(deltas/sstar*k + psi)
+   elif rstar is not None and ustar is not None and T is not None:
+     if s == 'T':
+       a = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0.177, np.where(rstar<0.825, 1.376, np.where(rstar<3., 1.026, np.where(rstar<10., 1.625, np.where(rstar<30., 4.661, 34.904))))))
+       b = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0, np.where(rstar<0.825, 0.929, np.where(rstar<3., -0.599, np.where(rstar<10., -1.018, np.where(rstar<30., -1.475, -2.067))))))
+       # There is a gap in Liu et al (1979) - no values for a/b are given for 0.825 < rstar < 0.925.
+       # Surely a typo, but between 0.825 and 0.925, I arbitrarily chose 0.825 as boundary between two
+       # consecutive segments.
+     elif s == 'Q':
+       a = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0.292, np.where(rstar<0.825, 1.808, np.where(rstar<3., 1.393, np.where(rstar<10., 1.956, np.where(rstar<30., 4.994, 30.79))))))
+       b = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0, np.where(rstar<0.825, 0.826, np.where(rstar<3., -0.528, np.where(rstar<10., -0.870, np.where(rstar<30., -1.297, -1.845))))))
+     else:
+       sys.exit('s should be T for temperature or Q for humidity')
+
+     zs = meteolib.NU(T)/ustar* a*rstar**b  
    else:
      sys.exit('zs can be computed either from (CSN,z0,z) or from (deltas,sstar,psi,z)')
 
@@ -143,7 +162,7 @@ def U(z, ustar, z0, psi=0) :
 ################################################################################
 def UG(Q0v,h,thetav):
    """
-   This function computes the corrected wind speed to account for gustiness.
+   This function computes the corrected wind speed to account for gustiness as in Fairall et al (1996, 2003).
    It depends on :
    - the surface virtual temperature flux Q0v (K.m.s-1)
    - the convective boundary layer height h (in m)
