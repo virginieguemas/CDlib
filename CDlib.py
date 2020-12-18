@@ -74,26 +74,33 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
 
    return CSn
 ################################################################################
-def Z0(u=None, ustar=None, psi=None, CDN=None, z=None) :
+def Z0(u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
    """
    This function computes the aerodynamic roughness length (in m) either as a function of :
    - the neutral bulk momentum exchange coefficient CDN,
    - the height z (in m),
-   or as a function of:
+   or as a function of (the relation between the observed wind profile and flux):
    - the horizontal wind speed u (in m/s), 
    - the friction velocity ustar (in m/s), 
    - the additive stability correction psi.
-   - the height z (in m).
+   - the height z (in m) 
+   or as a function of (Smith, 1988):
+   - the alpha = 0.011 as in Charnock (1955) or alpha = 0.013 as in Zeng et al (1998)  
+   - the friction velocity ustar (in m/s),
+   - the temperature T (Kelvin)  
 
    Author : Virginie Guemas - October 2020 
+   Modified : Virginie Guemas - December 2020 - Smith (1988) formula for bulk parameterizations
    """
 
    if CDN is not None and z is not None:
      z0 = z/np.exp(np.sqrt(k**2/CDN))
    elif u is not None and ustar is not None and psi is not None and z is not None:
      z0 = z/np.exp(u/ustar*k + psi)
+   elif alpha is not None and ustar is not None and T is not None:
+     z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
    else:
-     sys.exit('z0 can be computed either from (CDN,z) or from (u,ustar,psi,z)')
+     sys.exit('z0 can be computed either from (CDN,z) or from (u,ustar,psi,z) or from (alpha,ustar,T)')
 
    return z0
 ################################################################################
@@ -103,11 +110,13 @@ def ZS(deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None) :
    - the neutral bulk scalar exchange coefficient CHN (for heat) or CQN (for momentum),
    - the aerodyamic roughness length z0 (in m),
    - the heigth z (in m),
-   or as a function of :
+   or as a function of (the relation between the observed scalar profile and flux):
    - the height z (in m),
    - the difference in scalar deltas between height z and the surface (either potential temperature in Kelvin or specific humidity in kg/kg)
    - the scaling parameter sstar (for either temperature thetastar or humidity qstar),
    - the additive stability correction psi.
+   or as a function of (Brutsaert,1982):
+   or as a function of (Andreas, 1987):
 
    Author : Virginie Guemas - October 2020 
    """
@@ -131,6 +140,21 @@ def U(z, ustar, z0, psi=0) :
    u = ustar/k * (np.log(z/z0) - psi)
 
    return u
+################################################################################
+def UG(Q0v,h,thetav):
+   """
+   This function computes the corrected wind speed to account for gustiness.
+   It depends on :
+   - the surface virtual temperature flux Q0v (K.m.s-1)
+   - the convective boundary layer height h (in m)
+   - the virtual potential temperature (in Kelvin).
+
+   Author : Virginie Guemas - December 2020
+   """
+  
+   ug = 1.25 (g/thetav*h*Q0v)**(1/3)
+
+   return ug
 ################################################################################
 def S(z, s0, sstar, zs, psi=0) :
    """
@@ -186,7 +210,7 @@ def RB(thetav, Dthetav, u, v, z) :
 ################################################################################
 def Rstar(ustar, z0, T) :
    """
-   This function computes the Roughness Reynolds number as a function of the friction velocity ustar (in m/s), the aerodynamic roughness length (in m) and the temperature.
+   This function computes the Roughness Reynolds number as a function of the friction velocity ustar (in m/s), the aerodynamic roughness length (in m) and the temperature (in Kelvin).
 
    Author : Virginie Guemas - October 2020 
    """
