@@ -30,7 +30,7 @@ def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
    This function computes the neutral bulk momentum exchange coefficient CDN either as a function of :
    - the aerodynamic roughness length z0 (in m),
    - the height z (in m),
-   or as a function of : 
+   or as a function of (the relation between observed wind profile and fluxes): 
    - the horizontal wind speed u (in m/s), 
    - the friction velocity ustar (in m/s), 
    - the multiplicative stability correction f.
@@ -54,7 +54,7 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
    - the scalar roughness length zs for either temperature or humidity (in m),
    - the aerodyamic roughness length z0 (in m),
    - the height z (in m),
-   or as function of :
+   or as function of (the relation between observed meteorological parameters and fluxes):
    - the difference in scalar deltas between height z and the surface (either potential temperature in Kelvin or specific humidity in kg/kg),
    - the horizontal wind speed u (in m/s),
    - the scaling parameter sstar (thetastar for temperature in Kelvin and qstar for humidity in kg/kg),
@@ -84,8 +84,8 @@ def Z0(u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
    - the friction velocity ustar (in m/s), 
    - the additive stability correction psi.
    - the height z (in m) 
-   or as a function of (Smith, 1988):
-   - the alpha = 0.011 as in Charnock (1955) or alpha = 0.013 as in Zeng et al (1998)  
+   or as a function of (Smith, 1988 formula used in COARE2.5):
+   - the alpha = 0.011 as in Charnock (1955) and COARE2.5 or alpha = 0.013 as in Zeng et al (1998)  
    - the friction velocity ustar (in m/s),
    - the temperature T (in Kelvin)  
 
@@ -104,66 +104,105 @@ def Z0(u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
 
    return z0
 ################################################################################
-def ZS(deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None, rstar=None, ustar=None, T=None, s=None) :
+def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None, rstar=None, ustar=None, T=None, s=None) :
    """
-   This function returns the scalar roughness length (in m) for either heat or humidity as a function of :
+   This function returns the scalar roughness length (in m) for either heat or humidity.
+   With option method = 'CN' (correspondance between neutral exchange coefficients and roughness length), 
+   the function needs :
    - the neutral bulk scalar exchange coefficient CHN (for heat) or CQN (for momentum),
    - the aerodyamic roughness length z0 (in m),
-   - the height z (in m),
-   or as a function of (the relation between the observed scalar profile and flux):
+   - the height z (in m).
+   With option method = 'obs' (from the relation between the observed scalar profiles and fluxes),
+   the function needs :
    - the height z (in m),
    - the difference in scalar deltas between height z and the surface (either potential temperature in Kelvin or specific humidity in kg/kg)
    - the scaling parameter sstar (for either temperature thetastar or humidity qstar),
-   - the additive stability correction psi,
-   or as a function of (Liu et al 1979 used in Fairall, 1996):
+   - the additive stability correction psi.
+   With option method = 'LKB' (Liu et al 1979 used in COARE2.5),
+   the function needs:
    - the temperature T (in Kelvin),
    - the roughness Reynolds number rstar,
-   - the friction velocity ustar (in m/s),
-   - s = 'T'/'Q' for heat/humidity (parameters a and b differ),
-   or as a function of (Andreas, 1987):
+   - the friction velocity ustar (in m/s).
+   - s = 'T'/'Q' for heat/humidity (parameters a and b differ).
+   With option method = 'andreas' (model from Andreas, 1987),
+   the function needs:
    - the roughness Reynolds number rstar,
    - the aerodynamic roughness length z0 (in m),
-   - s = 'T'/'Q' for heat/humidity (parameters a and b differ),
-   or a function of (Brutsaert,1982):
+   - s = 'T'/'Q' for heat/humidity (parameters b0, b1 and b2 differ).
+   With option method = 'fullbrutsaert' (full Brutsaert 1982 model),
+   the function needs: Not coded yet
+
+   With option method = 'simplebrutsaert' (simplified Brutsaert 1982 model),
+   the function needs:
+   - the temperature T (in Kelvin),
+   - the friction velocity ustar (in m/s).   
+   - s = 'T'/'Q' for heat/humidity (parameter r differ).
 
    Author : Virginie Guemas - October 2020 
    Modified : Virginie Guemas - December 2020 - Option LKB (Liu et al, 1979) used in COARE2.5 (Fairall et al 1996) 
                                                 Option Andreas (1987)
+                                                Option Brutsaert (1982) simplified model
    """
 
-   if CSN is not None and z0 is not None and z is not None:
-     zs = z/np.exp(k**2/(ln(z/z0)*CSN))
-   elif z is not None and deltas is not None and sstar is not None and psi is not None: 
-     zs = z/np.exp(deltas/sstar*k + psi)
-   elif rstar is not None and ustar is not None and T is not None:
-     if s == 'T':
-       a = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0.177, np.where(rstar<0.825, 1.376, np.where(rstar<3., 1.026, np.where(rstar<10., 1.625, np.where(rstar<30., 4.661, 34.904))))))
-       b = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0, np.where(rstar<0.825, 0.929, np.where(rstar<3., -0.599, np.where(rstar<10., -1.018, np.where(rstar<30., -1.475, -2.067))))))
-       # There is a gap in Liu et al (1979) - no values for a/b are given for 0.825 < rstar < 0.925.
-       # Surely a typo, but between 0.825 and 0.925, I arbitrarily chose 0.825 as boundary between two
-       # consecutive segments.
-     elif s == 'Q':
-       a = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0.292, np.where(rstar<0.825, 1.808, np.where(rstar<3., 1.393, np.where(rstar<10., 1.956, np.where(rstar<30., 4.994, 30.79))))))
-       b = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0, np.where(rstar<0.825, 0.826, np.where(rstar<3., -0.528, np.where(rstar<10., -0.870, np.where(rstar<30., -1.297, -1.845))))))
-     else:
-       sys.exit('s should be T for temperature or Q for humidity')
+   if method == 'CN': 
+     if CSN is not None and z0 is not None and z is not None:
+       zs = z/np.exp(k**2/(ln(z/z0)*CSN))
+     else 
+       sys.exit('With option method = \'CN\', input CSN, z0 and z are required.')
 
-     zs = meteolib.NU(T)/ustar* a*rstar**b  
-   elif rstar is not None and z0 is not None:
-     if s == 'T':
-       b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.25, np.where(rstar<2.5, 0.149, 0.317)))
-       b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.55, -0.565)))
-       b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.183)))
-     elif s == 'Q':
-       b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.61, np.where(rstar<2.5, 0.351, 0.396)))
-       b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.628, -0.512)))
-       b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.18)))
-     else:
-       sys.exit('s should be T for temperature or Q for humidity')
+   elif method == 'obs':
+     if z is not None and deltas is not None and sstar is not None and psi is not None: 
+       zs = z/np.exp(deltas/sstar*k + psi)
+     else 
+       sys.exit('With option method = \'obs\', input z, deltas, sstar and psi are required.')
+
+   elif method == 'LKB': 
+     if rstar is not None and ustar is not None and T is not None:
+       if s == 'T':
+         a = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0.177, np.where(rstar<0.825, 1.376, np.where(rstar<3., 1.026, np.where(rstar<10., 1.625, np.where(rstar<30., 4.661, 34.904))))))
+         b = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0, np.where(rstar<0.825, 0.929, np.where(rstar<3., -0.599, np.where(rstar<10., -1.018, np.where(rstar<30., -1.475, -2.067))))))
+         # There is a gap in Liu et al (1979) - no values for a/b are given for 0.825 < rstar < 0.925.
+         # Surely a typo, but between 0.825 and 0.925, I arbitrarily chose 0.825 as boundary between two
+         # consecutive segments.
+       elif s == 'Q':
+         a = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0.292, np.where(rstar<0.825, 1.808, np.where(rstar<3., 1.393, np.where(rstar<10., 1.956, np.where(rstar<30., 4.994, 30.79))))))
+         b = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0, np.where(rstar<0.825, 0.826, np.where(rstar<3., -0.528, np.where(rstar<10., -0.870, np.where(rstar<30., -1.297, -1.845))))))
+       else:
+         sys.exit('s should be T for temperature or Q for humidity')
+       zs = meteolib.NU(T)/ustar* a*rstar**b  
+     else
+       sys.exit('With option method = \'LKB\', input rstar, ustar, T and s are required.')
+
+   elif method == 'andreas': 
+     if rstar is not None and z0 is not None:
+       if s == 'T':
+         b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.25, np.where(rstar<2.5, 0.149, 0.317)))
+         b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.55, -0.565)))
+         b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.183)))
+       elif s == 'Q':
+         b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.61, np.where(rstar<2.5, 0.351, 0.396)))
+         b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.628, -0.512)))
+         b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.18)))
+       else:
+         sys.exit('s should be T for temperature or Q for humidity')
+       zs = z0*np.exp(b0 + b1*np.log(rstar) + b2*np.log(rstar)**2)
+     else
+       sys.exit('With option method = \'andreas\', input rstar, z0 and s are required.')
+
+   elif method == 'simplebrutsaert':
+     if ustar is not None and T is not None:
+       if s == 'T':
+         r = 0.4
+       elif s = 'Q':
+         r = 0.62
+       else:
+         sys.exit('s should be T for temperature or Q for humidity')
+       zs = r*meteolib.NU(T)/ustar
+     else
+       sys.exit('With option method = \'simplebrutsaert\', input ustar, T and s are required.')
      
-     zs = z0*np.exp(b0 + b1*np.log(rstar) + b2*np.log(rstar)**2)
    else:
-     sys.exit('zs can be computed either from (CSN,z0,z) or from (deltas,sstar,psi,z) or from (rstar,ustar,T,s) or from (rstar,z0,s)')
+     sys.exit('Valid methods are \'CN\', \'obs\', \'LKB\', \'andreas\', \'simplebrutsaert\'.')
 
    return zs
 ################################################################################
@@ -178,10 +217,11 @@ def U(z, ustar, z0, psi=0) :
 
    return u
 ################################################################################
-def UG(Q0v,h,thetav):
+def UG(beta=1.25,Q0v,h,thetav):
    """
    This function computes the corrected wind speed to account for gustiness as in Fairall et al (1996, 2003).
    It depends on :
+   - the correction factor beta = 1.25 as in COARE2.5 or beta = 1 as in Zeng et al (1998)
    - the surface virtual temperature flux Q0v (K.m.s-1)
    - the convective boundary layer height h (in m)
    - the virtual potential temperature (in Kelvin).
@@ -189,7 +229,7 @@ def UG(Q0v,h,thetav):
    Author : Virginie Guemas - December 2020
    """
   
-   ug = 1.25 (g/thetav*h*Q0v)**(1/3)
+   ug = beta * (g/thetav*h*Q0v)**(1/3)
 
    return ug
 ################################################################################
@@ -283,8 +323,8 @@ def PSI(z, Lmo, stab=None, unstab=None) :
                                              'beljaars-holtslag' -- Beljaars and Holtslag (1991)
                                              'grachev'     -- Grachev (2007)
    - unstab = formulation for unstable regimes : 'businger-dyer' -- Paulson (1970)
-                                                 'kansas'        -- Businger (1971)
-                                                 'fairall'       -- Fairall (1996)
+                                                 'kansas'        -- Businger et al (1971)
+                                                 'fairall'       -- Fairall et al (1996)
 
    Author : Virginie Guemas - September 2020
    Modified : Sebastien Blein - December 2020 (correct Beljaars and Holtslag 1991)
@@ -311,6 +351,16 @@ def PSI(z, Lmo, stab=None, unstab=None) :
 
      psiM = np.where (zeta<0, 2*np.log((1+phiM**(-1))/2) + np.log((1+phiM**(-2))/2) - 2*np.arctan(phiM**(-1)) + np.pi/2, 0.)
      psiH = np.where (zeta<0, 1.74*np.log((1+0.74*phiH**(-1))/1.74)+0.26*np.log((1-0.74*phiH**(-1))/0.26), 0.)
+   ################################
+   elif unstab == 'holtslag1990':
+     # I need to integrate the phi
+     psiM = None
+     psiH = None
+   ################################
+   elif unstab == 'kaderyaglom1990':
+     # I need to integrate the phi
+     psiM = None
+     psiH = None
    ################################
    elif unstab == 'fairall':
      y = (1 - 12.87*zeta)**(1/3) 
@@ -350,6 +400,11 @@ def PSI(z, Lmo, stab=None, unstab=None) :
 
      psiM = np.where (zeta>0, psi, psiM)
      psiH = np.where (zeta>0, psi, psiH)
+   ################################
+   elif stab == 'holtslag1990':
+       # I need to integrate the phi
+     psiM = None
+     psiH = None
    ################################
    elif stab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
