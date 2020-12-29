@@ -339,21 +339,37 @@ def U(z, ustar, z0, psi=0) :
 
    return u
 ################################################################################
-def UG(beta=1.25,Q0v,h,thetav):
+def UG(method=None, u, beta=1.25, Q0v, h, thetav):
    """
-   This function computes the corrected wind speed to account for gustiness as in Fairall et al (1996, 2003).
-   It depends on :
+   This function computes the corrected wind speed to account for gustiness.
+   With option method = 'godfreybeljaars' as in Fairall et al (1996, 2003),
+   the function needs :
+   - the horizontal wind speed u (in m/s),
    - the correction factor beta = 1.25 as in COARE2.5 or beta = 1 as in Zeng et al (1998) or beta = 1.2 as in Beljaars (1995)
    - the surface virtual temperature flux Q0v (K.m.s-1)
-   - the convective boundary layer height h (in m)
-   - the virtual potential temperature (in Kelvin).
+   - the convective boundary layer height h (in m), typically h=600m,
+   - the virtual potential temperature thetav (in Kelvin).
 
    Author : Virginie Guemas - December 2020
    """
-  
-   ug = beta * (g/thetav*h*Q0v)**(1/3)
+   
+   if method == 'godfreybeljaars':
+     if u is not None and thetav is not None and h is not None and Q0v is not None:
+       ug = beta * (g/thetav*h*Q0v)**(1/3)
+       ucor = np.sqrt(u**2+ug**2)
+     else
+       sys.exit('With option method = \'godfreybeljaars\', input u, thetav, h and Q0v are required.')
 
-   return ug
+   elif method ='jordan':
+     if u is not None:
+       ucor = u + 0.5/np.cosh(u)
+     else
+       sys.exit('With option method = \'jordan\', input u is required.')
+
+   else:
+     sys.exit('Valid methods are \'godfreybeljaars\' and \'jordan\'.')
+
+   return ucor
 ################################################################################
 def S(z, s0, sstar, zs, psi=0) :
    """
