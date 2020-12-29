@@ -8,6 +8,7 @@
 #                    - ZS           -  Scalar roughness length for 
 #                                      heat or humidity
 #                    - U            -  Wind speed 
+#                    - U            -  Wind speed accounting for gustiness
 #                    - S            -  Potential temperature or 
 #                                      specific humidity
 #                    - LMO          -  Monin-Obukhov length
@@ -59,7 +60,7 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
    - the horizontal wind speed u (in m/s),
    - the scaling parameter sstar (thetastar for temperature in Kelvin and qstar for humidity in kg/kg),
    - the friction velocity ustar (in m/s),
-   - the multiplicative stability correction psi.
+   - the multiplicative stability correction f.
 
    Author : Virginie Guemas - October 2020 
    """
@@ -74,33 +75,67 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
 
    return CSn
 ################################################################################
-def Z0(u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
+def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
    """
-   This function computes the aerodynamic roughness length (in m) either as a function of :
+   This function returns the aerodynamic roughness length (in m).
+   With option method = 'CN', (correspondance between neutral exchange coefficient and roughness length),
+   the function needs :
    - the neutral bulk momentum exchange coefficient CDN,
-   - the height z (in m),
-   or as a function of (the relation between the observed wind profile and flux):
+   - the height z (in m).
+   With option method = 'obs' (from the relation between the observed wind profile and flux),
+   the function needs :
    - the horizontal wind speed u (in m/s), 
    - the friction velocity ustar (in m/s), 
    - the additive stability correction psi.
-   - the height z (in m) 
-   or as a function of (Smith, 1988 formula used in COARE2.5):
-   - the alpha = 0.011 as in Charnock (1955) and COARE2.5 or alpha = 0.013 as in Zeng et al (1998)  
+   - the height z (in m).
+   With option method = 'coare2.5' (Smith, 1988 formula used in COARE2.5):
+   the function needs :
+   - the alpha = 0.011 as in Charnock (1955), Smith (1988) and COARE2.5 or alpha = 0.013 as in Zeng et al (1998) or alpha = 0.018 as in Beljaars (1995) 
    - the friction velocity ustar (in m/s),
-   - the temperature T (in Kelvin)  
+   - the temperature T (in Kelvin).
+   With option method = 'coare3.0' (Fairall et al 2003),
+   the function needs :
+   - the 10m horizontal wind speed u (in m/s)
+   - the friction velocity ustar (in m/s),
+   - the temperature T (in Kelvin).
 
    Author : Virginie Guemas - October 2020 
    Modified : Virginie Guemas - December 2020 - Option Smith (1988) formula used in COARE 2.5 (Fairall, 1996) 
+                                                Option COARE 3.0 (Fairall et al 2003)
    """
 
-   if CDN is not None and z is not None:
-     z0 = z/np.exp(np.sqrt(k**2/CDN))
-   elif u is not None and ustar is not None and psi is not None and z is not None:
-     z0 = z/np.exp(u/ustar*k + psi)
-   elif alpha is not None and ustar is not None and T is not None:
-     z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
+   if method == 'CN': 
+     if CDN is not None and z is not None:
+       z0 = z/np.exp(np.sqrt(k**2/CDN))
+     else 
+       sys.exit('With option method = \'CN\', input CDN and z are required.')
+
+   elif method == 'obs':
+     if u is not None and ustar is not None and psi is not None and z is not None:
+       z0 = z/np.exp(u/ustar*k + psi)
+     else 
+       sys.exit('With option method = \'obs\', input z, u, ustar and psi are required.')
+
+   elif method == 'coare2.5':
+     if alpha is not None and ustar is not None and T is not None:
+       z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
+     else
+       sys.exit('With option method = \'coare2.5\', input alpha, ustar and T as required') 
+
+   elif method == 'coare3.0':
+     if u is not None and ustar is not None and T is not None:
+       u10n = u
+       while (prevu10 - u10n) > 0.01: 
+         alpha = np.where(u10n>18,0.018,np.where(u10n<10,0.011,0.011+(0.018-0.011)/(18-10)*(u10n-10)))
+         z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
+         prevu10 = u10n
+         u10n = U(z=10, ustar, z0) 
+
+     else    
+       sys.exit('With option method = \'coare3.0\', input u, ustar and T as required') 
+
    else:
-     sys.exit('z0 can be computed either from (CDN,z) or from (u,ustar,psi,z) or from (alpha,ustar,T)')
+     sys.exit('Valid methods are \'CN\', \'obs\', \'coare2.5\', \'coare3.0\'.')
 
    return z0
 ################################################################################
@@ -137,6 +172,8 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    - the temperature T (in Kelvin),
    - the friction velocity ustar (in m/s).   
    - s = 'T'/'Q' for heat/humidity (parameter r differ).
+   With option method = 'clayson' (Clayson et al 1996),
+   the function needs: Not coded yet
 
    Author : Virginie Guemas - October 2020 
    Modified : Virginie Guemas - December 2020 - Option LKB (Liu et al, 1979) used in COARE2.5 (Fairall et al 1996) 
@@ -189,6 +226,9 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
      else
        sys.exit('With option method = \'andreas\', input rstar, z0 and s are required.')
 
+   elif method == 'fullbrutsaert':
+     sys.exit('Sorry. Option method = \'fullbrutsaert\' from Brutsaert et al (1982) is not coded yet. Coming soon')
+
    elif method == 'simplebrutsaert':
      if ustar is not None and T is not None:
        if s == 'T':
@@ -200,6 +240,9 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
        zs = r*meteolib.NU(T)/ustar
      else
        sys.exit('With option method = \'simplebrutsaert\', input ustar, T and s are required.')
+
+   elif method == 'clayson':
+     sys.exit('Sorry. Option method = \'clayson\' from Clayson et al (1996) is not coded yet. Coming soon')
      
    else:
      sys.exit('Valid methods are \'CN\', \'obs\', \'LKB\', \'andreas\', \'simplebrutsaert\'.')
@@ -221,7 +264,7 @@ def UG(beta=1.25,Q0v,h,thetav):
    """
    This function computes the corrected wind speed to account for gustiness as in Fairall et al (1996, 2003).
    It depends on :
-   - the correction factor beta = 1.25 as in COARE2.5 or beta = 1 as in Zeng et al (1998)
+   - the correction factor beta = 1.25 as in COARE2.5 or beta = 1 as in Zeng et al (1998) or beta = 1.2 as in Beljaars (1995)
    - the surface virtual temperature flux Q0v (K.m.s-1)
    - the convective boundary layer height h (in m)
    - the virtual potential temperature (in Kelvin).
@@ -367,8 +410,8 @@ def PSI(z, Lmo, stab=None, unstab=None) :
 
      psi = np.where (zeta<0, 1.5*np.log((y**2+y+1)/3) - np.sqrt(3)*np.arctan((2*y+1)/np.sqrt(3)) + np.pi/np.sqrt(3), 0.)
 
-     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'kansas')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
-     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'kansas')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
    ################################  
    elif  unstab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
