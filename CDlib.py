@@ -118,19 +118,19 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    if method == 'CN': 
      if CDN is not None and z is not None:
        z0 = z/np.exp(np.sqrt(k**2/CDN))
-     else 
+     else: 
        sys.exit('With option method = \'CN\', input CDN and z are required.')
 
    elif method == 'obs':
      if u is not None and ustar is not None and psi is not None and z is not None:
        z0 = z/np.exp(u/ustar*k + psi)
-     else 
+     else: 
        sys.exit('With option method = \'obs\', input z, u, ustar and psi are required.')
 
    elif method == 'coare2.5':
      if alpha is not None and ustar is not None and T is not None:
        z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
-     else
+     else:
        sys.exit('With option method = \'coare2.5\', input alpha, ustar and T as required') 
 
    elif method == 'coare3.0':
@@ -142,7 +142,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
          tmp = U(z=10, ustar, z0) 
          err = abs(u10n-tmp)
          u10n = tmp
-     else    
+     else:    
        sys.exit('With option method = \'coare3.0\', input u, ustar and T are required') 
 
    elif method == 'tayloryelland':
@@ -159,7 +159,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
          tmp = U(z=10, ustar, z0) 
          err = abs(u10n-tmp)
          u10n = tmp
-     else    
+     else:    
        sys.exit('With option method = \'tayloryelland\', input u, ustar and T are required') 
 
    elif method == 'oost':
@@ -175,7 +175,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
          tmp = U(z=10, ustar, z0) 
          err = abs(u10n-tmp)
          u10n = tmp
-     else    
+     else:    
        sys.exit('With option method = \'oost\', input u, ustar and T are required') 
 
    else:
@@ -240,13 +240,13 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    if method == 'CN': 
      if CSN is not None and z0 is not None and z is not None:
        zs = z/np.exp(k**2/(ln(z/z0)*CSN))
-     else 
+     else: 
        sys.exit('With option method = \'CN\', input CSN, z0 and z are required.')
 
    elif method == 'obs':
      if z is not None and deltas is not None and sstar is not None and psi is not None: 
        zs = z/np.exp(deltas/sstar*k + psi)
-     else 
+     else: 
        sys.exit('With option method = \'obs\', input z, deltas, sstar and psi are required.')
 
    elif method == 'LKB': 
@@ -263,7 +263,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
        else:
          sys.exit('s should be T for temperature or Q for humidity')
        zs = meteolib.NU(T)/ustar* a*rstar**b  
-     else
+     else:
        sys.exit('With option method = \'LKB\', input rstar, ustar, T and s are required.')
 
    elif method == 'andreas': 
@@ -279,14 +279,14 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
        else:
          sys.exit('s should be T for temperature or Q for humidity')
        zs = z0*np.exp(b0 + b1*np.log(rstar) + b2*np.log(rstar)**2)
-     else
+     else:
        sys.exit('With option method = \'andreas\', input rstar, z0 and s are required.')
 
    elif method == 'brutsaertgarratt':
      if ustar is not None and z0 is not None and T is not None:
        Rr = ustar*z0/meteolib.NU(T)
        zs = zo*np.exp(2-2.28*Rr**0.25)
-     else
+     else:
        sys.exit('With option method = \'brutsaertgarratt\', input ustar, z0 and T are required.')
 
    elif method == 'simplebrutsaert':
@@ -298,7 +298,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
        else:
          sys.exit('s should be T for temperature or Q for humidity')
        zs = r*meteolib.NU(T)/ustar
-     else
+     else:
        sys.exit('With option method = \'simplebrutsaert\', input ustar, T and s are required.')
 
    elif method == 'clayson':
@@ -312,7 +312,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
          zs = np.where(ustar>0.23, 0.2*meteolib.NU(T)/(ustar-0.2) + 9*10**(-6), 0.0205*ustar**2/g+0.294*meteolib.NU(T)/ustar)
        else:
          sys.exit('s should be T for temperature or Q for humidity')
-     else
+     else:
        sys.exit('With option method = \'mondonredelsperger\', input ustar, T and s are required.')
 
    elif method == 'coare3.0':
@@ -320,7 +320,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
        Rr = ustar*z0/meteolib.NU(T)
        zs = 0.000055*Rr**(-0.6)
        zs = np.where(zs<0.0001,0.0001,zs)
-     else
+     else:
        sys.exit('With option method = \'coare3.0\', input ustar, z0 and T are required.')
 
    else:
@@ -357,13 +357,13 @@ def UG(method=None, u, beta=1.25, Q0v, h, thetav):
      if u is not None and thetav is not None and h is not None and Q0v is not None:
        ug = beta * (g/thetav*h*Q0v)**(1/3)
        ucor = np.sqrt(u**2+ug**2)
-     else
+     else:
        sys.exit('With option method = \'godfreybeljaars\', input u, thetav, h and Q0v are required.')
 
    elif method ='jordan':
      if u is not None:
        ucor = u + 0.5/np.cosh(u)
-     else
+     else:
        sys.exit('With option method = \'jordan\', input u is required.')
 
    else:
