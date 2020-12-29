@@ -95,13 +95,24 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    - the temperature T (in Kelvin).
    With option method = 'coare3.0' (Fairall et al 2003),
    the function needs :
-   - the 10m horizontal wind speed u (in m/s)
+   - the 10m horizontal wind speed u (in m/s),
+   - the friction velocity ustar (in m/s),
+   - the temperature T (in Kelvin).
+   With option method = 'tayloryelland' (Taylor and Yelland, 2001) implemented as an option in COARE3.0,
+   the function needs :
+   - the 10m horizontal wind speed u (in m/s),
+   - the friction velocity ustar (in m/s),
+   - the temperature T (in Kelvin).
+   With option method = 'oost' (Oost et al, 2002) implemented as an option in COARE3.0,
+   the function needs :
+   - the 10m horizontal wind speed u (in m/s),
    - the friction velocity ustar (in m/s),
    - the temperature T (in Kelvin).
 
    Author : Virginie Guemas - October 2020 
    Modified : Virginie Guemas - December 2020 - Option Smith (1988) formula used in COARE 2.5 (Fairall, 1996) 
                                                 Option COARE 3.0 (Fairall et al 2003)
+                                                Options Taylor and Yelland (2001) and Oost et al (2002)
    """
 
    if method == 'CN': 
@@ -125,17 +136,50 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    elif method == 'coare3.0':
      if u is not None and ustar is not None and T is not None:
        u10n = u
-       while (prevu10 - u10n) > 0.01: 
+       while err>0.01: 
          alpha = np.where(u10n>18,0.018,np.where(u10n<10,0.011,0.011+(0.018-0.011)/(18-10)*(u10n-10)))
          z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
-         prevu10 = u10n
-         u10n = U(z=10, ustar, z0) 
-
+         tmp = U(z=10, ustar, z0) 
+         err = abs(u10n-tmp)
+         u10n = tmp
      else    
-       sys.exit('With option method = \'coare3.0\', input u, ustar and T as required') 
+       sys.exit('With option method = \'coare3.0\', input u, ustar and T are required') 
+
+   elif method == 'tayloryelland':
+     # What is coded here corresponds to what is reported in Fairall et al (2003) implemented as an option in COARE3.0
+     # What appears in SURFEX documentation is not exactly the same: u is used instead of u10n and a different formula
+     # is used for hs.
+     if u is not None and ustar is not None and T is not None:
+       u10n = u
+       while err>0.01:
+         Tp = 0.729*u10n
+         hs = 0.0248*u10n**2
+         Lp = (g*Tp**2)/(2*np.pi)
+         z0 = 1200*hs*(hs/Lp)**4.5 + 0.11*meteolib.NU(T)/ustar
+         tmp = U(z=10, ustar, z0) 
+         err = abs(u10n-tmp)
+         u10n = tmp
+     else    
+       sys.exit('With option method = \'tayloryelland\', input u, ustar and T are required') 
+
+   elif method == 'oost':
+     # What is coded here corresponds to what is reported in Fairall et al (2003) implemented as an option in COARE3.0.
+     # What appears in SURFEX documentation is not exactly the same : u is used instead of U10n
+     if u is not None and ustar is not None and T is not None:
+       u10n = u
+       while err>0.01:
+         Tp = 0.729*u10n
+         Lp = (g*Tp**2)/(2*np.pi)
+         Cp = g*Tp/(2*np.pi)
+         z0 = 50/(2*np.pi)*Lp*(ustar/Cp)**4.5 + 0.11*meteolib.NU(T)/ustar
+         tmp = U(z=10, ustar, z0) 
+         err = abs(u10n-tmp)
+         u10n = tmp
+     else    
+       sys.exit('With option method = \'oost\', input u, ustar and T are required') 
 
    else:
-     sys.exit('Valid methods are \'CN\', \'obs\', \'coare2.5\', \'coare3.0\'.')
+     sys.exit('Valid methods are \'CN\', \'obs\', \'coare2.5\', \'coare3.0\',\'tayloryelland\',\'oost\'.')
 
    return z0
 ################################################################################
