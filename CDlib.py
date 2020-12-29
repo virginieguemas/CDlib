@@ -8,7 +8,7 @@
 #                    - ZS           -  Scalar roughness length for 
 #                                      heat or humidity
 #                    - U            -  Wind speed 
-#                    - U            -  Wind speed accounting for gustiness
+#                    - UG           -  Wind speed accounting for gustiness
 #                    - S            -  Potential temperature or 
 #                                      specific humidity
 #                    - LMO          -  Monin-Obukhov length
@@ -139,7 +139,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
        while err>0.01: 
          alpha = np.where(u10n>18,0.018,np.where(u10n<10,0.011,0.011+(0.018-0.011)/(18-10)*(u10n-10)))
          z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
-         tmp = U(z=10, ustar, z0) 
+         tmp = U(z=10, ustar = ustar, z0 = z0) 
          err = abs(u10n-tmp)
          u10n = tmp
      else:    
@@ -156,7 +156,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
          hs = 0.0248*u10n**2
          Lp = (g*Tp**2)/(2*np.pi)
          z0 = 1200*hs*(hs/Lp)**4.5 + 0.11*meteolib.NU(T)/ustar
-         tmp = U(z=10, ustar, z0) 
+         tmp = U(z=10, ustar = ustar, z0 = z0) 
          err = abs(u10n-tmp)
          u10n = tmp
      else:    
@@ -172,7 +172,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
          Lp = (g*Tp**2)/(2*np.pi)
          Cp = g*Tp/(2*np.pi)
          z0 = 50/(2*np.pi)*Lp*(ustar/Cp)**4.5 + 0.11*meteolib.NU(T)/ustar
-         tmp = U(z=10, ustar, z0) 
+         tmp = U(z=10, ustar = ustar, z0 = z0) 
          err = abs(u10n-tmp)
          u10n = tmp
      else:    
@@ -293,7 +293,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
      if ustar is not None and T is not None:
        if s == 'T':
          r = 0.4
-       elif s = 'Q':
+       elif s == 'Q':
          r = 0.62
        else:
          sys.exit('s should be T for temperature or Q for humidity')
@@ -339,7 +339,7 @@ def U(z, ustar, z0, psi=0) :
 
    return u
 ################################################################################
-def UG(method=None, u, beta=1.25, Q0v, h, thetav):
+def UG(method=None, u=None, Q0v=None, h=None, thetav=None, beta=1.25):
    """
    This function computes the corrected wind speed to account for gustiness.
    With option method = 'godfreybeljaars' as in Fairall et al (1996, 2003),
@@ -360,7 +360,7 @@ def UG(method=None, u, beta=1.25, Q0v, h, thetav):
      else:
        sys.exit('With option method = \'godfreybeljaars\', input u, thetav, h and Q0v are required.')
 
-   elif method ='jordan':
+   elif method == 'jordan':
      if u is not None:
        ucor = u + 0.5/np.cosh(u)
      else:
