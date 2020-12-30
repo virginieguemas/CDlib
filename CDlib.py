@@ -136,11 +136,12 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    elif method == 'coare3.0':
      if u is not None and ustar is not None and T is not None:
        u10n = u
+       err = 10
        while err>0.01: 
          alpha = np.where(u10n>18,0.018,np.where(u10n<10,0.011,0.011+(0.018-0.011)/(18-10)*(u10n-10)))
          z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
          tmp = U(z=10, ustar = ustar, z0 = z0) 
-         err = abs(u10n-tmp)
+         err = np.nanmax(abs(u10n-tmp))
          u10n = tmp
      else:    
        sys.exit('With option method = \'coare3.0\', input u, ustar and T are required') 
@@ -151,13 +152,14 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      # is used for hs.
      if u is not None and ustar is not None and T is not None:
        u10n = u
+       err = 10
        while err>0.01:
          Tp = 0.729*u10n
          hs = 0.0248*u10n**2
          Lp = (g*Tp**2)/(2*np.pi)
          z0 = 1200*hs*(hs/Lp)**4.5 + 0.11*meteolib.NU(T)/ustar
          tmp = U(z=10, ustar = ustar, z0 = z0) 
-         err = abs(u10n-tmp)
+         err = np.nanmax(abs(u10n-tmp))
          u10n = tmp
      else:    
        sys.exit('With option method = \'tayloryelland\', input u, ustar and T are required') 
@@ -167,13 +169,14 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      # What appears in SURFEX documentation is not exactly the same : u is used instead of U10n
      if u is not None and ustar is not None and T is not None:
        u10n = u
+       err = 10
        while err>0.01:
          Tp = 0.729*u10n
          Lp = (g*Tp**2)/(2*np.pi)
          Cp = g*Tp/(2*np.pi)
          z0 = 50/(2*np.pi)*Lp*(ustar/Cp)**4.5 + 0.11*meteolib.NU(T)/ustar
          tmp = U(z=10, ustar = ustar, z0 = z0) 
-         err = abs(u10n-tmp)
+         err = np.nanmax(abs(u10n-tmp))
          u10n = tmp
      else:    
        sys.exit('With option method = \'oost\', input u, ustar and T are required') 
@@ -223,7 +226,9 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
 
    With option method = 'mondonredelsperger' (Mondon and Redelsperger, 1998) proposed in SURFEX,
    the function needs:
-
+   - the temperature T (in Kelvin),
+   - the friction velocity ustar (in m/s).   
+   - s = 'T'/'Q' for heat/humidity (parameter r differ).
    With option method = 'coare3.0' (Fairall et al, 2003),
    the function needs:
    - the temperature T (in Kelvin),
@@ -239,7 +244,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
 
    if method == 'CN': 
      if CSN is not None and z0 is not None and z is not None:
-       zs = z/np.exp(k**2/(ln(z/z0)*CSN))
+       zs = z/np.exp(k**2/(np.log(z/z0)*CSN))
      else: 
        sys.exit('With option method = \'CN\', input CSN, z0 and z are required.')
 
@@ -285,7 +290,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    elif method == 'brutsaertgarratt':
      if ustar is not None and z0 is not None and T is not None:
        Rr = ustar*z0/meteolib.NU(T)
-       zs = zo*np.exp(2-2.28*Rr**0.25)
+       zs = z0*np.exp(2-2.28*Rr**0.25)
      else:
        sys.exit('With option method = \'brutsaertgarratt\', input ustar, z0 and T are required.')
 
