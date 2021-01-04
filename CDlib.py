@@ -216,7 +216,12 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    - the temperature T (in Kelvin),
    - the friction velocity ustar (in m/s).   
    - the aerodynamic roughness length z0 (in m),
-   With option method = 'simplebrutsaert' (simplified Brutsaert 1982 model),
+   With option method = 'revisedbrutsaertgarratt' (updated coefficients as proposed in Fairall, 2003),
+   the function needs: 
+   - the temperature T (in Kelvin),
+   - the friction velocity ustar (in m/s).   
+   - the aerodynamic roughness length z0 (in m),
+   With option method = 'simplebrutsaert' (simplified Brutsaert 1982 model used in several bulk algorithms presented in Fairall 2003),
    the function needs:
    - the temperature T (in Kelvin),
    - the friction velocity ustar (in m/s).   
@@ -239,7 +244,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    Modified : Virginie Guemas - December 2020 - Option LKB (Liu et al, 1979) used in COARE2.5 (Fairall et al 1996) 
                                                 Option Andreas (1987)
                                                 Option Brutsaert (1982) simplified model
-                                                Option COARE 3.0 (Fairall et al, 2003) and (Garratt, 1992)
+                                                Option COARE 3.0 (Fairall et al, 2003) and (Garratt, 1992) and revised (Garratt, 1992) as suggested in Fairall et al, 2003
    """
 
    if method == 'CN': 
@@ -293,6 +298,13 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
        zs = z0*np.exp(2-2.28*Rr**0.25)
      else:
        sys.exit('With option method = \'brutsaertgarratt\', input ustar, z0 and T are required.')
+
+   elif method == 'revisedbrutsaertgarratt':
+     if ustar is not None and z0 is not None and T is not None:
+       Rr = ustar*z0/meteolib.NU(T)
+       zs = z0*np.exp(3.4-3.5*Rr**0.25)
+     else:
+       sys.exit('With option method = \'revisedbrutsaertgarratt\', input ustar, z0 and T are required.')
 
    elif method == 'simplebrutsaert':
      if ustar is not None and T is not None:
