@@ -374,15 +374,27 @@ def U(z, ustar, z0, psi=0) :
 def UG(method=None, u=None, Q0v=None, h=None, thetav=None, beta=1.25):
    """
    This function computes the corrected wind speed to account for gustiness.
-   With option method = 'godfreybeljaars' as in Fairall et al (1996, 2003),
-   the function needs :
+   With option method = 'godfreybeljaars', (Godfrey and Beljaars, 1991) 
+   the function needs : 
    - the horizontal wind speed u (in m/s),
    - the correction factor beta = 1.25 as in COARE2.5 or beta = 1 as in Zeng et al (1998) or beta = 1.2 as in Beljaars (1995)
    - the surface virtual temperature flux Q0v (K.m.s-1)
    - the convective boundary layer height h (in m), typically h=600m,
    - the virtual potential temperature thetav (in Kelvin).
+   With option method = 'fairall' (approximation of godfreyBeljaars used in Fairal et al (1996, 2003),
+   the function needs :
+   - the horizontal wind speed u (in m/s),
+   - the correction factor beta = 1.25 as in COARE2.5 or beta = 1 as in Zeng et al (1998) or beta = 1.2 as in Beljaars (1995)
+   - the temperature T (in Kelvin),
+   - the potential temperature flux Q0 (K.m.s-1),
+   - the humidifty flux E0 (m.s-1),
+   - the convective boundary layer height h (in m), typically h=600m.
+   With option method = 'jordan' (Jordan et al, 1999) used in Andreas et al (2010),
+   the function needs:
+   - the horizontal wind speed u (in m/s). 
 
-   Author : Virginie Guemas - December 2020
+   Author : Virginie Guemas   - December 2020
+   Modified : Virginie Guemas - January 2021 - Option fairall which approximates godfreybeljaars 
    """
    
    if method == 'godfreybeljaars':
@@ -392,6 +404,13 @@ def UG(method=None, u=None, Q0v=None, h=None, thetav=None, beta=1.25):
      else:
        sys.exit('With option method = \'godfreybeljaars\', input u, thetav, h and Q0v are required.')
 
+   elif method == 'fairall':
+     if u is not None and T is not None and h is not None and Q0 is not None  and E0 is not None:
+       ug = beta * (g/T*h*(Q0+0.61*T*E0))**(1/3)
+       ucor = np.sqrt(u**2+ug**2)
+     else:
+       sys.exit('With option method = \'fairall\', input u, T, h, Q0 and E0 are required.')
+
    elif method == 'jordan':
      if u is not None:
        ucor = u + 0.5/np.cosh(u)
@@ -399,7 +418,7 @@ def UG(method=None, u=None, Q0v=None, h=None, thetav=None, beta=1.25):
        sys.exit('With option method = \'jordan\', input u is required.')
 
    else:
-     sys.exit('Valid methods are \'godfreybeljaars\' and \'jordan\'.')
+     sys.exit('Valid methods are \'godfreybeljaars\', \'fairall\' and \'jordan\'.')
 
    return ucor
 ################################################################################
@@ -692,7 +711,14 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
 
    return f
 ################################################################################
-def BULK(u, deltaq, deltatheta, z) :
+def BULK(u, deltaq, deltatheta, z, method='coare3.0') :
+
+    #if method == 'coare2.5':
+
+    #elif method == 'coare3.0':
+
+    #else:
+    #  sys.exit('Only coare2.5 and coare3.0 are coded for now')
 
 
 
