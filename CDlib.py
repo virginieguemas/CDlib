@@ -17,6 +17,8 @@
 #                    - Rstar        -  Roughness Reynolds number
 #                    - Thetavstar   -  Scaling virtual temperature
 #                    - WEBB         -  Webb correction to latent heat flux
+#                    - HSR          -  Sensible heat flux due to rain
+#                    - TAUR         -  Wind stress due to rain
 #                    - PSI          -  Stability correction (additive)
 #                    - F            -  Stability correction as a ratio CD/CDN
 #                    - BULK         -  Bulk algorithms for turbulent fluxes
@@ -26,8 +28,14 @@
 import numpy as np
 import meteolib
 import sys
-g = 9.81 # Gravity 
-k = 0.4 # Von Karman constant
+g = 9.81     # Gravity 
+k = 0.4      # Von Karman constant
+cpw = 4210   # J.K-1.kg-1 # specfic heat of liquid water
+cp  = 1004   # J.K-1.kg-1 # specific heat of dry air
+Rv  = 461.4  # J.K-1.kg-1
+Ra  = 287    # J.K-1.kg-1 
+dv  = 0.219  # cm2.s-1    # Water vapour diffusivity
+dh  = 0.1906 # cm2.s-1    # Heat diffusivtity in air
 ################################################################################
 def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
    """
@@ -556,6 +564,55 @@ def WEBB(E0,Q0,q,T) :
    E0cor = EO + w*q
 
    return E0cor
+################################################################################
+def HSR(R, T, Ts, deltaq, P, lda=1, mu=1) :
+   """
+   Precipitation transfer heat to the ocean which should be accounted for in the sensible
+   heat flux term. This function estimates the correction which should be added to 
+   sensible heat flux according to Gosnell et al (1995) as used in Fairall et al (1996).
+   This function needs :
+   - the rain rate R (kg.s-1.m-2),
+   - the rain (supposed equal to atmospheric) temperature T (in Kelvin),
+   - the surface temperature Ts (in Kelvin),
+   - the difference in specific humidity between atmosphere and surface deltaq (in kg.kg-1),
+   - the pressure (in hPa),
+   - the lambda parameter lda set to 1 for COARE, Rv/Ra for ECUME and 1 for ECUME6,
+   - the mu parameter set to 1 for COARE, dh/dv for ECUME and ECUME6.
+
+   Author : Virginie Guemas - January 2021
+   """
+   
+   deltaT = T-Ts  # Difference between atmosphere/rain temperature and surface one
+
+   Lv = meteolib.LV(T) # Latent heat of vaporization of rain
+
+   qsat = meteolib.ES(T)*Ra/(P*Rv) # Saturation specific humidity
+
+   dq = lda * Lv*qsat/(Rv*T**2) # Clausius-Clapeyron relation
+
+   alpha = (1 + Lv/cp * dv/dh* dq) # wet-bulb factor
+
+   B = mu*(cp/Lv)*deltaT/deltaq # Bowen ratio
+           
+   Hsrain = - R*cpw*alpha*(1+1/B)*deltaT
+  
+   return Hsrain
+################################################################################
+def TAUR(u, R, gamma=0.85) :
+   """
+   Rainfall tends to increase surface drag. This functions computes the correction
+   to be added to surface wind stress according to Fairall et al (1996) as a 
+   function of :
+   - the wind speed u (in m.s-1)
+   - the precipitation rate (in kg.m-2.s-1),
+   - the gamma parameter set to 0.85 in COARE and ECUME6, 1 in ECUME.
+
+   Author : Virginie Guemas - January 2021
+   """
+
+   Taurain = gamma*R*u 
+
+   return Taurain    
 ################################################################################
 def PSI(z, Lmo, stab=None, unstab=None) :
    """
