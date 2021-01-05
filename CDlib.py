@@ -12,6 +12,7 @@
 #                    - S            -  Potential temperature or 
 #                                      specific humidity
 #                    - LMO          -  Monin-Obukhov length
+#                    - LMOapprox    -  Monin-Obukhov length approximation
 #                    - Rb           -  Bulk Richardson number
 #                    - Rstar        -  Roughness Reynolds number
 #                    - Thetavstar   -  Scaling virtual temperature
@@ -442,7 +443,7 @@ def LMO(ustar, thetav, thetavstar=None, Q0v=None) :
 
    return Lmo
 ################################################################################
-def LMOapprox(ustar, T, thetastar=None, qstar=None, Q0=None, E0=None)
+def LMOapprox(ustar, T, thetastar=None, qstar=None, Q0=None, E0=None) :
    """
    This function approximates the Monin-Obukhov length (in meters) as in Fairall et al (1996, 2003) either as of :
    - the friction velocity ustar (in m.s-1), 
@@ -476,7 +477,7 @@ def LMOapprox(ustar, T, thetastar=None, qstar=None, Q0=None, E0=None)
    else:
      Lmo = -(ustar**3)/(k*beta*((-ustar*thetastar)+0.61*T*E0))
 
-return Lmo
+   return Lmo
 ################################################################################
 def RB(thetav, Dthetav, u, v, z) :
    """
@@ -568,13 +569,24 @@ def PSI(z, Lmo, stab=None, unstab=None) :
      psiM = None
      psiH = None
    ################################
-   elif unstab == 'fairall':
+   elif unstab == 'fairall1996':
      y = (1 - 12.87*zeta)**(1/3) 
 
      psi = np.where (zeta<0, 1.5*np.log((y**2+y+1)/3) - np.sqrt(3)*np.arctan((2*y+1)/np.sqrt(3)) + np.pi/np.sqrt(3), 0.)
 
      psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
      psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
+   ################################
+   elif unstab == 'fairall2003':
+     a={'m':10.15,'h':34.15}
+     psi={}
+     for s in ('m','h'):
+       y = (1 - a[s]*zeta)**(1/3) 
+
+       psi[s] = np.where (zeta<0, 1.5*np.log((y**2+y+1)/3) - np.sqrt(3)*np.arctan((2*y+1)/np.sqrt(3)) + np.pi/np.sqrt(3), 0.)
+
+     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi['m'], 0.) 
+     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi['h'], 0.) 
    ################################  
    elif  unstab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
@@ -679,7 +691,7 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
 
    return f
 ################################################################################
-def BULK(u, deltaq, deltatheta, z)
+def BULK(u, deltaq, deltatheta, z) :
 
 
 
@@ -688,5 +700,5 @@ def BULK(u, deltaq, deltatheta, z)
 
 
 
-   return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':CDN, 'CHN':CHN)
+   return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':CDN, 'CHN':CHN}
 ################################################################################
