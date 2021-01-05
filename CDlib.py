@@ -121,18 +121,21 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      else: 
        sys.exit('With option method = \'CN\', input CDN and z are required.')
 
+   ##################################
    elif method == 'obs':
      if u is not None and ustar is not None and psi is not None and z is not None:
        z0 = z/np.exp(u/ustar*k + psi)
      else: 
        sys.exit('With option method = \'obs\', input z, u, ustar and psi are required.')
 
+   ##################################
    elif method == 'coare2.5':
      if alpha is not None and ustar is not None and T is not None:
        z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
      else:
        sys.exit('With option method = \'coare2.5\', input alpha, ustar and T as required') 
 
+   ##################################
    elif method == 'coare3.0':
      if u is not None and ustar is not None and T is not None:
        u10n = u
@@ -146,6 +149,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      else:    
        sys.exit('With option method = \'coare3.0\', input u, ustar and T are required') 
 
+   ##################################
    elif method == 'tayloryelland':
      # What is coded here corresponds to what is reported in Fairall et al (2003) implemented as an option in COARE3.0
      # What appears in SURFEX documentation is not exactly the same: u is used instead of u10n and a different formula
@@ -164,6 +168,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      else:    
        sys.exit('With option method = \'tayloryelland\', input u, ustar and T are required') 
 
+   ##################################
    elif method == 'oost':
      # What is coded here corresponds to what is reported in Fairall et al (2003) implemented as an option in COARE3.0.
      # What appears in SURFEX documentation is not exactly the same : u is used instead of U10n
@@ -253,12 +258,14 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
      else: 
        sys.exit('With option method = \'CN\', input CSN, z0 and z are required.')
 
+   ###################################
    elif method == 'obs':
      if z is not None and deltas is not None and sstar is not None and psi is not None: 
        zs = z/np.exp(deltas/sstar*k + psi)
      else: 
        sys.exit('With option method = \'obs\', input z, deltas, sstar and psi are required.')
 
+   ###################################
    elif method == 'LKB': 
      if rstar is not None and ustar is not None and T is not None:
        if s == 'T':
@@ -275,7 +282,8 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
        zs = meteolib.NU(T)/ustar* a*rstar**b  
      else:
        sys.exit('With option method = \'LKB\', input rstar, ustar, T and s are required.')
-
+  
+   ###################################
    elif method == 'andreas': 
      if rstar is not None and z0 is not None:
        if s == 'T':
@@ -292,6 +300,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
      else:
        sys.exit('With option method = \'andreas\', input rstar, z0 and s are required.')
 
+   ##################################
    elif method == 'brutsaertgarratt':
      if ustar is not None and z0 is not None and T is not None:
        Rr = ustar*z0/meteolib.NU(T)
@@ -299,6 +308,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
      else:
        sys.exit('With option method = \'brutsaertgarratt\', input ustar, z0 and T are required.')
 
+   ##################################
    elif method == 'revisedbrutsaertgarratt':
      if ustar is not None and z0 is not None and T is not None:
        Rr = ustar*z0/meteolib.NU(T)
@@ -306,6 +316,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
      else:
        sys.exit('With option method = \'revisedbrutsaertgarratt\', input ustar, z0 and T are required.')
 
+   ##################################
    elif method == 'simplebrutsaert':
      if ustar is not None and T is not None:
        if s == 'T':
@@ -318,9 +329,11 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
      else:
        sys.exit('With option method = \'simplebrutsaert\', input ustar, T and s are required.')
 
+   ##################################
    elif method == 'clayson':
      sys.exit('Sorry. Option method = \'clayson\' from Clayson et al (1996) is not coded yet. Coming soon')
 
+   ##################################
    elif method == 'mondonredelsperger':
      if ustar is not None and T is not None:
        if s == 'T':
@@ -332,6 +345,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
      else:
        sys.exit('With option method = \'mondonredelsperger\', input ustar, T and s are required.')
 
+   ##################################
    elif method == 'coare3.0':
      if ustar is not None and z0 is not None and T is not None:
        Rr = ustar*z0/meteolib.NU(T)
@@ -410,6 +424,7 @@ def LMO(ustar, thetav, thetavstar=None, Q0v=None) :
 
    Author : Virginie Guemas - October 2020 
    """
+   meteolib.check_T(thetav)
 
    if Q0v is None and thetavstar is None:
      sys.exit('At least one of thetavstar or Q0v should be provided')
@@ -426,6 +441,42 @@ def LMO(ustar, thetav, thetavstar=None, Q0v=None) :
      Lmo = (ustar**2)/(k*beta*thetavstar)
 
    return Lmo
+################################################################################
+def LMOapprox(ustar, T, thetastar=None, qstar=None, Q0=None, E0=None)
+   """
+   This function approximates the Monin-Obukhov length (in meters) as in Fairall et al (1996, 2003) either as of :
+   - the friction velocity ustar (in m.s-1), 
+   - the temperature scaling parameter thetastar (in Kelvin),
+   - the humidity scaling parameter qstar (in kg.kg-1),
+   - the temperature (in Kelvin).
+   or as a function of :
+   - the friction velocity ustar (in m.s-1),
+   - the turbulent heat flux Q0 (in K.m.s-1),
+   - the turbulent humidity flux E0 (in m.s-1),
+   - the temperature (in Kelvin).
+
+   Author : Virginie Guemas - January 2021
+   """
+   meteolib.check_T(T)
+   
+   if thetastar is None and Q0 is None:
+     sys.exit('At least one of thetastar or Q0 should be provided')
+   
+   if qstar is None and E0 is None:
+     sys.exit('At least one of qstar or E0 should be provided')
+
+   beta = g/T
+
+   if Q0 is not None and E0 is not None:
+     Lmo = -(ustar**3)/(k*beta*(Q0+0.61*T*E0))
+   elif thetastar is not None and qstar is not None:
+     Lmo = (ustar**2)/(k*beta*(thetastar+0.61*T*qstar))
+   elif Q0 is not None and qstar is not None:
+     Lmo = -(ustar**3)/(k*beta*(Q0+0.61*T*(-ustar*qstar)))
+   else:
+     Lmo = -(ustar**3)/(k*beta*((-ustar*thetastar)+0.61*T*E0))
+
+return Lmo
 ################################################################################
 def RB(thetav, Dthetav, u, v, z) :
    """
@@ -627,4 +678,15 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
    f = np.where(Rb < 0, 1 - (c1*Rb)/(1+c2*np.abs(Rb)**0.5), fstab)
 
    return f
+################################################################################
+def BULK(u, deltaq, deltatheta, z)
+
+
+
+
+
+
+
+
+   return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':CDN, 'CHN':CHN)
 ################################################################################
