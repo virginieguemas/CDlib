@@ -16,8 +16,10 @@
 #                    - Rb           -  Bulk Richardson number
 #                    - Rstar        -  Roughness Reynolds number
 #                    - Thetavstar   -  Scaling virtual temperature
+#                    - WEBB         -  Webb correction to latent heat flux
 #                    - PSI          -  Stability correction (additive)
 #                    - F            -  Stability correction as a ratio CD/CDN
+#                    - BULK         -  Bulk algorithms for turbulent fluxes
 #
 # Author : Virginie Guemas - 2020
 ################################################################################
@@ -536,6 +538,24 @@ def Thetavstar(thetastar, qstar, theta, q) :
    thetavstar = thetastar*(1+0.61*q) + 0.61*theta*qstar
 
    return thetavstar
+################################################################################
+def WEBB(E0,Q0,q,T) :
+   """
+   The total surface humidity flux contains a turbulent component and a component from the mean vertical wind speed. This mean vertical wind speed can be approximated as in Webb et al (1980). This function estimates the total surface humidity flux including the Webb effect as a function of :
+   - the turbulent humidity flux E0 (in m.s-1),
+   - the turbulent temperature flux Q0 (in K.m.s-1),
+   - the specific humidity q (in kg.kg-1),
+   - the temperature T (in Kelvin).
+
+   Author : Virginie Guemas - January 2021
+   """
+   meteolib.check_q(q)
+   meteolib.check_T(T)
+
+   w = 1.61*E0 + (1.61*q)*Q0/T
+   E0cor = EO + w*q
+
+   return E0cor
 ################################################################################
 def PSI(z, Lmo, stab=None, unstab=None) :
    """
