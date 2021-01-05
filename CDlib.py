@@ -531,7 +531,8 @@ def PSI(z, Lmo, stab=None, unstab=None) :
                                              'grachev'     -- Grachev (2007)
    - unstab = formulation for unstable regimes : 'businger-dyer' -- Paulson (1970)
                                                  'kansas'        -- Businger et al (1971)
-                                                 'fairall'       -- Fairall et al (1996)
+                                                 'fairall1996'   -- Fairall et al (1996)
+                                                 'fairall2003'   -- Fairall et al (2003)
 
    Author : Virginie Guemas - September 2020
    Modified : Sebastien Blein - December 2020 (correct Beljaars and Holtslag 1991)
