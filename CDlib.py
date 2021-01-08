@@ -1,8 +1,10 @@
 # This module contains functions to estimate bulk exchange coefficients from 
 # observations and to compute them from various parameterisations.
 #
-# List of functions: - CDN          -  Neutral bulk transfer coefficient
-#                    - CSN          -  Neutral bulk exchange coefficient 
+# List of functions: - CDN          -  Neutral momentum bulk transfer coefficient 
+#                    - CD           -  Momentum bulk transfer coefficient
+#                    - CSN          -  Neutral scalar bulk transfer coefficient 
+#                    - CS           -  Scalar bulk transfer coefficient
 #                                      for heat or humidity
 #                    - Z0           -  Aerodynamic roughness length
 #                    - ZS           -  Scalar roughness length for 
@@ -13,7 +15,7 @@
 #                                      specific humidity
 #                    - LMO          -  Monin-Obukhov length
 #                    - LMOapprox    -  Monin-Obukhov length approximation
-#                    - Rb           -  Bulk Richardson number
+#                    - RB           -  Bulk Richardson number
 #                    - Rstar        -  Roughness Reynolds number
 #                    - Thetavstar   -  Scaling virtual temperature
 #                    - WEBB         -  Webb correction to latent heat flux
@@ -28,7 +30,7 @@
 import numpy as np
 import meteolib
 import sys
-g = 9.81     # Gravity 
+g = 9.81     # Gravity - Fairall et al 1996 use 9.72 instead
 k = 0.4      # Von Karman constant
 cpw = 4210   # J.K-1.kg-1 # specfic heat of liquid water
 cp  = 1004   # J.K-1.kg-1 # specific heat of dry air
@@ -60,6 +62,22 @@ def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
 
    return CDn
 ################################################################################
+def CD (CDN=None, psi=None) :
+   """
+   This function computes the bulk momentum transfer coefficient as a function of the
+   neutral bulk momentum transfer coefficient CDN and the additive stability correction
+   psi.
+
+   Author : Virginie Guemas - January 2021 
+   """
+  
+   if CDN is not None and psi is not None : 
+     Cd = CDN / (1-np.sqrt(CDN)/k*psi)**2    
+   else:
+     sys.exit('CDN and psi are required to compute CD')
+
+   return Cd
+################################################################################
 def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z=None) :
    """
    This function computes the neutral bulk exchange coefficient for either heat or humidity as a function of :
@@ -85,6 +103,22 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
      sys.exit('CSn can be computed either from (zs,z0,z) or from (u,ustar,deltas,sstar,f')
 
    return CSn
+################################################################################
+def CS (CDN, CSN, psiM, psiH) :
+   """
+   This function computes the bulk heat or humidity transfer coefficient as a function of the
+   neutral bulk heat or humidity transfer coefficient CSN, the neutral bulk momentum transfer coefficient CDN
+   and the additive stability correction psiM for momentum and psiH for heat or humidity.
+
+   Author : Virginie Guemas - January 2021 
+   """
+  
+   if CDN is not None and CSN is not None and psiM is not None and psiH is not None : 
+     Cs = CSN / ((1-CSN/(k*np.sqrt(CDN))*psiH)*(1-np.sqrt(CDN)/k*psiM))    
+   else:
+     sys.exit('CDN, CSN, psiM and psiH are required to compute CH or CE')
+
+   return Cs
 ################################################################################
 def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
    """
@@ -366,7 +400,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
        sys.exit('With option method = \'coare3.0\', input ustar, z0 and T are required.')
 
    else:
-     sys.exit('Valid methods are \'CN\', \'obs\', \'LKB\', \'andreas\',\'brutsaertgarratt\',\'simplebrutsaert\',\'mondonredelsperger\',\'coare3.0\'.')
+     sys.exit('Valid methods are \'CN\', \'obs\', \'LKB\', \'andreas\',\'brutsaertgarratt\',\'revisedbrutsaertgarratt\',\'simplebrutsaert\',\'mondonredelsperger\',\'coare3.0\'.')
 
    return zs
 ################################################################################
@@ -381,7 +415,7 @@ def U(z, ustar, z0, psi=0) :
 
    return u
 ################################################################################
-def UG(method=None, u=None, Q0v=None, h=None, thetav=None, beta=1.25):
+def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=None, beta=1.25):
    """
    This function computes the corrected wind speed to account for gustiness.
    With option method = 'godfreybeljaars', (Godfrey and Beljaars, 1991) 
@@ -391,13 +425,13 @@ def UG(method=None, u=None, Q0v=None, h=None, thetav=None, beta=1.25):
    - the surface virtual temperature flux Q0v (K.m.s-1)
    - the convective boundary layer height h (in m), typically h=600m,
    - the virtual potential temperature thetav (in Kelvin).
-   With option method = 'fairall' (approximation of godfreyBeljaars used in Fairal et al (1996, 2003),
+   With option method = 'fairall' (approximation of godfreyBeljaars used in Fairall et al (1996, 2003),
    the function needs :
    - the horizontal wind speed u (in m/s),
    - the correction factor beta = 1.25 as in COARE2.5 or beta = 1 as in Zeng et al (1998) or beta = 1.2 as in Beljaars (1995)
    - the temperature T (in Kelvin),
    - the potential temperature flux Q0 (K.m.s-1),
-   - the humidifty flux E0 (m.s-1),
+   - the humidity flux E0 (m.s-1),
    - the convective boundary layer height h (in m), typically h=600m.
    With option method = 'jordan' (Jordan et al, 1999) used in Andreas et al (2010),
    the function needs:
@@ -614,13 +648,12 @@ def TAUR(u, R, gamma=0.85) :
 
    return Taurain    
 ################################################################################
-def PSI(z, Lmo, stab=None, unstab=None) :
+def PSI(z, Lmo, gamma=5, stab=None, unstab=None) :
    """
    This function computes a stability correction as a function of Monin-Obukhov length. It takes four arguments:
    - z = height
    - Lmo = Monin-Obukhov length
    - stab = formulation for stable regimes : 'dyer-hicks'  -- Dyer and Hicks (1970)
-                                             'large-pond'  -- Large and Pond (1982)
                                              'lettau'      -- Lettau (1979) 
                                              'holtslag-bruin' -- Holtslag and de Bruin (1988)
                                              'beljaars-holtslag' -- Beljaars and Holtslag (1991)
@@ -628,11 +661,15 @@ def PSI(z, Lmo, stab=None, unstab=None) :
    - unstab = formulation for unstable regimes : 'businger-dyer' -- Paulson (1970)
                                                  'kansas'        -- Businger et al (1971)
                                                  'fairall1996'   -- Fairall et al (1996)
-                                                 'fairall2003'   -- Fairall et al (2003)
+                                                 'grachev2000'   -- Grachev et al (2000)
+   - the gamma factor for the 'dyer-hicks' option which can range between about 5 
+   (Webb, 1970; Businger et al., 1971; Dyer, 1974; Large and Pond,1981) and about 7 (Wieringa, 1980;
+   Large and Pond, 1982; Högström, 1988) - 4.7 seems to be used in COARE2.5
 
    Author : Virginie Guemas - September 2020
    Modified : Sebastien Blein - December 2020 (correct Beljaars and Holtslag 1991)
               Virginie Guemas - December 2020 (add kansas, fairall and holtslag-bruin)
+              Virginie Guemas - January 2021 (include factor gamma to tune the dyer-hicks option. Ex: 4.7 for COARE2.5)
    """
    np.seterr(invalid='ignore')
 
@@ -671,10 +708,10 @@ def PSI(z, Lmo, stab=None, unstab=None) :
 
      psi = np.where (zeta<0, 1.5*np.log((y**2+y+1)/3) - np.sqrt(3)*np.arctan((2*y+1)/np.sqrt(3)) + np.pi/np.sqrt(3), 0.)
 
-     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
-     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab = stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab = stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
    ################################
-   elif unstab == 'fairall2003':
+   elif unstab == 'grachev2000':
      a={'m':10.15,'h':34.15}
      psi={}
      for s in ('m','h'):
@@ -682,8 +719,8 @@ def PSI(z, Lmo, stab=None, unstab=None) :
 
        psi[s] = np.where (zeta<0, 1.5*np.log((y**2+y+1)/3) - np.sqrt(3)*np.arctan((2*y+1)/np.sqrt(3)) + np.pi/np.sqrt(3), 0.)
 
-     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi['m'], 0.) 
-     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi['h'], 0.) 
+     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab = stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi['m'], 0.) 
+     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab = stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi['h'], 0.) 
    ################################  
    elif  unstab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
@@ -697,12 +734,8 @@ def PSI(z, Lmo, stab=None, unstab=None) :
    ################################
    ################################
    if stab == 'dyer-hicks':
-     psiM = np.where (zeta>0, -5*zeta, psiM)
-     psiH = np.where (zeta>0, -5*zeta, psiM)
-   ################################
-   elif stab == 'large-pond':
-     psiM = np.where (zeta>0, -7*zeta, psiM)
-     psiH = np.where (zeta>0, -7*zeta, psiM)
+     psiM = np.where (zeta>0, -gamma*zeta, psiM)
+     psiH = np.where (zeta>0, -gamma*zeta, psiM)
    ################################
    elif stab == 'lettau':
      x = 1 + 4.5*zeta
@@ -788,21 +821,100 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
 
    return f
 ################################################################################
-def BULK(u, deltaq, deltatheta, z, method='coare3.0') :
+def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
+   """
+   This function applies one of the COARE or ECUME algorithms to estimate bulk
+   turbulent fluxes of velocity, heat and humidity as well as the associated transfer 
+   coefficients. It needs :
+   - the atmospheric measurement height z (in m),
+   - the wind speed at height z (in m.s-1),
+   - the potential temperature at height z (in Kelvin),
+   - the potential temperature at the surface (in Kelvin),
+   - the specific humidity at height z (in kg.kg-1),
+   - the specific humidity at the surface (in kg.kg-1)
+   - the layer-averaged temperature T (in Kelvin).
 
-    #if method == 'coare2.5':
+   Warning: The Webb correction for latent heat flux, the precipitation correction for
+   sensible heat flux, the warm-layer and cool-skin corrections for surface temperature
+   are not included.
 
-    #elif method == 'coare3.0':
+   Author : Virginie Guemas - January 2021  
+   """
+   deltatheta = theta - thetas
+   deltaq = q - qs
 
-    #else:
-    #  sys.exit('Only coare2.5 and coare3.0 are coded for now')
+   # First guess of wind gustiness correction and neutral bulk transfer coefficients
+   Ucor = np.sqrt(u**2+0.5**2) 
+   cdn = 0.0015
+   chn = 0.001
+   cen = 0.001
+   # I could not find the first guess of neutral bulk transfer coefficients in Fairall et al (1996, 2003).
+   # Those choices are arbitrary.
+
+   if method == 'coare2.5':
+     # First guess of bulk transfer coefficients is neutral bulk transfer coefficients
+     cd = cdn
+     ch = chn
+     ce = cen
+
+   elif method == 'coare3.0':
+     # First guess based on Grachev and Fairall (1997) estimate of stability
+     Rb = RB(thetav = T, Dthetav = meteolib.Thetav(theta,q) - meteolib.Thetav(thetas,qs), u = u, v = 0, z = z) 
+     # Fairall et al 2003 use T instead of thetav in the estimate of beta = g/thetav
+     zeta = 10*Rb/(1+Rb/(-4.5))
+     (psiM, psiH) = PSI(z, z/zeta, gamma = 4.7, stab='beljaars-holtslag', unstab='grachev2000')
+     cd = CD (CDN = cdn, psi = psiM)
+     ch = CS (CDN = cdn, CSN = chn, psiM = psiM, psiH = psiH)
+     ce = CS (CDN = cdn, CSN = cen, psiM = psiM, psiH = psiH)
+
+   else:
+      sys.exit('Only coare2.5 and coare3.0 are coded for now')
+
+   # First guess of bulk turbulent fluxes
+   ustar = np.sqrt(cd * Ucor**2)
+   thetastar = ch/np.sqrt(cd) * deltatheta
+   qstar = ce/np.sqrt(cd) * deltaq
+
+   # A few choices of methods used in the various COARE algorithms
+   zsmod = {'coare2.5':'LKB','coare3.0':'coare3.0'}
+   psiunstab = {'coare2.5':'fairall1996','coare3.0':'grachev2000'}
+   psistab = {'coare2.5':'dyer-hicks','coare3.0':'beljaars-holtslag'}
+   ncount = {'coare2.5':20,'coare3.0':10}
+
+   # Iterations
+   count = 0 
+   while count < ncount[method]:
+     # Monin-Obukhov length depends on turbulent fluxes
+     lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
+     # Aerodynamic roughness depends on friction velocity
+     z0 = Z0(method = method, alpha=0.011, u = u, ustar = ustar, T = T)
+     # Roughness Reynolds number depends on friction velocity and aerodynamic roughness
+     rstar = Rstar(ustar = ustar, z0 = z0, T = T)
+     # Scalar roughness depend on Roughness Reynolds number and friction velocity
+     z0T = ZS(method = zsmod[method], T = T, rstar = rstar, ustar = ustar, z0 = z0, s='T')
+     z0q = ZS(method = zsmod[method], T = T, rstar = rstar, ustar = ustar, z0 = z0, s='Q')
+     # Neutral transfer coefficients depend on roughness lengths
+     Cdn = CDN (z0 = z0, z = z)
+     Chn = CSN (zs = z0T, z0 = z0, z = z) 
+     Cen = CSN (zs = z0q, z0 = z0, z = z) 
+     # Stability correction depends on Monin-Obukov length
+     (psiM, psiH) = PSI(z, lmo, gamma = 4.7, stab = psistab[method], unstab = psiunstab[method])
+                  # I am unsure about the 4.7 factor which is not stated clearly in Fairall et al 1996
+     # Transfer coefficients depend on neutral transfer coefficients and stability corrections
+     Cd = CD (CDN = Cdn, psi = psiM)
+     Ch = CS (CDN = Cdn, CSN = Chn, psiM = psiM, psiH = psiH)
+     Ce = CS (CDN = Cdn, CSN = Cen, psiM = psiM, psiH = psiH)
+     # Updated estimates of turbulent fluxes
+     ustar = np.sqrt(Cd * Ucor**2)
+     thetastar = Ch/np.sqrt(Cd) * deltatheta
+     qstar = Ce/np.sqrt(Cd) * deltaq
+     # Update corrected wind speed for gustiness
+     Ucor = np.where(z/lmo<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25), u)
+     # Cool-skin is not implemented
+     count = count + 1
+   # Webb correction, precipitation correction and warm-layer corrections should be included when getting out of the loop 
+   # I prefer leaving them out of the function for now.
 
 
-
-
-
-
-
-
-   return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':CDN, 'CHN':CHN}
+   return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
