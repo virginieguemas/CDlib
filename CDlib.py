@@ -680,19 +680,19 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
 
    if stab is None or unstab is None:
        sys.exit('Stability correction type has to be specified (e.g.: stab=\'beljaars-holtslag\' and unstab=\'businger-dyer\')')
-
+   zeta_stab = np.where(zeta>0,zeta,np.nan)
+   zeta_unstab = np.where(zeta<0,zeta,np.nan)
    ###############################
    if unstab == 'businger-dyer':
-     zeta_unstab = np.where (zeta<0, zeta, np.nan)
-
      phiM = (1 - 16*zeta_unstab)**(-0.25)
      phiH = (1 - 16*zeta_unstab)**(-0.5)
-     psiM_unstab = 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2
-     psiH_unstab = 2*unp.log((1+phiH**(-1))/2)
+
+     psiM = np.where (zeta<0, 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2, 0.)
+     psiH = np.where (zeta<0, 2*unp.log((1+phiH**(-1))/2), 0.)
    ################################
    elif unstab == 'kansas':
-     phiM = (1 - 15*zeta)**(-0.25)
-     phiH = 0.74*(1 - 9*zeta)**(-0.5)
+     phiM = (1 - 15*zeta_unstab)**(-0.25)
+     phiH = 0.74*(1 - 9*zeta_unstab)**(-0.5)
 
      psiM = np.where (zeta<0, 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2, 0.)
      psiH = np.where (zeta<0, 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log((1-0.74*phiH**(-1))/0.26), 0.)
@@ -708,7 +708,7 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
      psiH = None
    ################################
    elif unstab == 'fairall1996':
-     y = (1 - 12.87*zeta)**(1/3) 
+     y = (1 - 12.87*zeta_unstab)**(1/3) 
 
      psi = np.where (zeta<0, 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3), 0.)
 
@@ -719,7 +719,7 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
      a={'m':10.15,'h':34.15}
      psi={}
      for s in ('m','h'):
-       y = (1 - a[s]*zeta)**(1/3) 
+       y = (1 - a[s]*zeta_unstab)**(1/3) 
 
        psi[s] = np.where (zeta<0, 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3), 0.)
 
@@ -765,17 +765,17 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
      psiH = np.where (zeta>0, -((1+2.*a*zeta/3)**(3./2) + b*(zeta-c/d)*unp.exp(-d*zeta) + b*c/d - 1), psiH)
    ################################
    elif stab == 'grachev':
-     zeta_stab = np.where (zeta>0, zeta, np.nan)
-     x_stab = (zeta_stab+1)**(1/3)
-     psiM_stab = -19.5*(x_stab-1) + 3.25*0.3**(1/3)*(2*unp.log((x_stab+0.3**(1/3))/(1+0.3**(1/3))) - unp.log((x_stab**2-0.3**(1/3)*x_stab+0.3**(2/3))/(1-0.3**(1/3)+0.3**(2/3))) +2*unp.sqrt(3)*(unp.arctan((2*x_stab-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3))) -unp.arctan((2-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3)))))
-     psiH_stab = -2.5*unp.log(1+3*zeta_stab+zeta_stab**2) +5/(2*unp.sqrt(5))*(unp.log((2*zeta_stab+3-unp.sqrt(5))/(2*zeta_stab+3+unp.sqrt(5))) -unp.log((3-unp.sqrt(5))/(3+unp.sqrt(5))))
+     x = (zeta_stab+1)**(1/3)
+
+     psiM = np.where (zeta>0, -19.5*(x-1) + 3.25*0.3**(1/3)*(2*unp.log((x+0.3**(1/3))/(1+0.3**(1/3))) - unp.log((x**2-0.3**(1/3)*x+0.3**(2/3))/(1-0.3**(1/3)+0.3**(2/3))) +2*unp.sqrt(3)*(unp.arctan((2*x-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3))) -unp.arctan((2-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3))))) , psiM)
+     psiH = np.where (zeta>0, -2.5*unp.log(1+3*zeta_stab+zeta_stab**2) +5/(2*unp.sqrt(5))*(unp.log((2*zeta_stab+3-unp.sqrt(5))/(2*zeta_stab+3+unp.sqrt(5))) -unp.log((3-unp.sqrt(5))/(3+unp.sqrt(5)))), psiH)
    ################################
    else:
      sys.exit('This option for stable cases is not coded yet.')
    ################################
    ################################
    
-   return (psiM_stab,psiH_stab,psiM_unstab,psiH_unstab)
+   return (psiM,psiH)
 ################################################################################
 def F(Rb, CDN, z, var='momentum', author='Louis') :
    """
