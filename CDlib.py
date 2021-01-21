@@ -30,6 +30,8 @@
 import numpy as np
 import meteolib
 import sys
+from uncertainties import unumpy as unp
+
 g = 9.81     # Gravity - Fairall et al 1996 use 9.72 instead
 k = 0.4      # Von Karman constant
 cpw = 4210   # J.K-1.kg-1 # specfic heat of liquid water
@@ -53,7 +55,7 @@ def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
    """
 
    if z0 is not None and z is not None:
-     CDn = (k/np.log(z/z0))**2
+     CDn = (k/unp.log(z/z0))**2
    elif u is not None and ustar is not None and f is not None:
      CD = (ustar**2)/(u**2)
      CDn = CD/f
@@ -72,7 +74,7 @@ def CD (CDN=None, psi=None) :
    """
   
    if CDN is not None and psi is not None : 
-     Cd = CDN / (1-np.sqrt(CDN)/k*psi)**2    
+     Cd = CDN / (1-unp.sqrt(CDN)/k*psi)**2    
    else:
      sys.exit('CDN and psi are required to compute CD')
 
@@ -95,7 +97,7 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
    """
 
    if zs is not None and z0 is not None and z is not None:
-     CSn = k**2/(np.log(z/zs)*np.log(z/z0))
+     CSn = k**2/(unp.log(z/zs)*unp.log(z/z0))
    elif ustar is not None and sstar is not None and u is not None and deltas is not None and f is not None: 
      CS = -(ustar*sstar)/(u*deltas)
      CSn = CS/f
@@ -114,7 +116,7 @@ def CS (CDN, CSN, psiM, psiH) :
    """
   
    if CDN is not None and CSN is not None and psiM is not None and psiH is not None : 
-     Cs = CSN / ((1-CSN/(k*np.sqrt(CDN))*psiH)*(1-np.sqrt(CDN)/k*psiM))    
+     Cs = CSN / ((1-CSN/(k*unp.sqrt(CDN))*psiH)*(1-unp.sqrt(CDN)/k*psiM))    
    else:
      sys.exit('CDN, CSN, psiM and psiH are required to compute CH or CE')
 
@@ -162,14 +164,14 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
 
    if method == 'CN': 
      if CDN is not None and z is not None:
-       z0 = z/np.exp(np.sqrt(k**2/CDN))
+       z0 = z/unp.exp(unp.sqrt(k**2/CDN))
      else: 
        sys.exit('With option method = \'CN\', input CDN and z are required.')
 
    ##################################
    elif method == 'obs':
      if u is not None and ustar is not None and psi is not None and z is not None:
-       z0 = z/np.exp(u/ustar*k + psi)
+       z0 = z/unp.exp(u/ustar*k + psi)
      else: 
        sys.exit('With option method = \'obs\', input z, u, ustar and psi are required.')
 
@@ -299,14 +301,14 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
 
    if method == 'CN': 
      if CSN is not None and z0 is not None and z is not None:
-       zs = z/np.exp(k**2/(np.log(z/z0)*CSN))
+       zs = z/unp.exp(k**2/(unp.log(z/z0)*CSN))
      else: 
        sys.exit('With option method = \'CN\', input CSN, z0 and z are required.')
 
    ###################################
    elif method == 'obs':
      if z is not None and deltas is not None and sstar is not None and psi is not None: 
-       zs = z/np.exp(deltas/sstar*k + psi)
+       zs = z/unp.exp(deltas/sstar*k + psi)
      else: 
        sys.exit('With option method = \'obs\', input z, deltas, sstar and psi are required.')
 
@@ -341,7 +343,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
          b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.18)))
        else:
          sys.exit('s should be T for temperature or Q for humidity')
-       zs = z0*np.exp(b0 + b1*np.log(rstar) + b2*np.log(rstar)**2)
+       zs = z0*unp.exp(b0 + b1*unp.log(rstar) + b2*unp.log(rstar)**2)
      else:
        sys.exit('With option method = \'andreas\', input rstar, z0 and s are required.')
 
@@ -349,7 +351,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    elif method == 'brutsaertgarratt':
      if ustar is not None and z0 is not None and T is not None:
        Rr = ustar*z0/meteolib.NU(T)
-       zs = z0*np.exp(2-2.28*Rr**0.25)
+       zs = z0*unp.exp(2-2.28*Rr**0.25)
      else:
        sys.exit('With option method = \'brutsaertgarratt\', input ustar, z0 and T are required.')
 
@@ -357,7 +359,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    elif method == 'revisedbrutsaertgarratt':
      if ustar is not None and z0 is not None and T is not None:
        Rr = ustar*z0/meteolib.NU(T)
-       zs = z0*np.exp(3.4-3.5*Rr**0.25)
+       zs = z0*unp.exp(3.4-3.5*Rr**0.25)
      else:
        sys.exit('With option method = \'revisedbrutsaertgarratt\', input ustar, z0 and T are required.')
 
@@ -411,7 +413,7 @@ def U(z, ustar, z0, psi=0) :
    Author : Virginie Guemas - October 2020 
    """
 
-   u = ustar/k * (np.log(z/z0) - psi)
+   u = ustar/k * (unp.log(z/z0) - psi)
 
    return u
 ################################################################################
@@ -444,20 +446,20 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
    if method == 'godfreybeljaars':
      if u is not None and thetav is not None and h is not None and Q0v is not None:
        ug = beta * (g/thetav*h*Q0v)**(1/3)
-       ucor = np.sqrt(u**2+ug**2)
+       ucor = unp.sqrt(u**2+ug**2)
      else:
        sys.exit('With option method = \'godfreybeljaars\', input u, thetav, h and Q0v are required.')
 
    elif method == 'fairall':
      if u is not None and T is not None and h is not None and Q0 is not None  and E0 is not None:
        ug = beta * (g/T*h*(Q0+0.61*T*E0))**(1/3)
-       ucor = np.sqrt(u**2+ug**2)
+       ucor = unp.sqrt(u**2+ug**2)
      else:
        sys.exit('With option method = \'fairall\', input u, T, h, Q0 and E0 are required.')
 
    elif method == 'jordan':
      if u is not None:
-       ucor = u + 0.5/np.cosh(u)
+       ucor = u + 0.5/unp.cosh(u)
      else:
        sys.exit('With option method = \'jordan\', input u is required.')
 
@@ -478,7 +480,7 @@ def S(z, s0, sstar, zs, psi=0) :
    Author : Virginie Guemas - October 2020 
    """
 
-   s = s0 + sstar/k * (np.log(z/zs) - psi)
+   s = s0 + sstar/k * (unp.log(z/zs) - psi)
 
    return s
 ################################################################################
@@ -646,13 +648,16 @@ def TAUR(u, R, gamma=0.85) :
 
    Taurain = gamma*R*u 
 
-   return Taurain    
+   return Taurain   
 ################################################################################
-def PSI(z, Lmo, gamma=5, stab=None, unstab=None) :
+def ZETA(z,Lmo) :
+   zeta = z/Lmo
+   return zeta
+################################################################################
+def PSI(zeta, gamma=5, stab=None, unstab=None) :
    """
    This function computes a stability correction as a function of Monin-Obukhov length. It takes four arguments:
-   - z = height
-   - Lmo = Monin-Obukhov length
+   - zeta = z (height) / Lmo (Monin-Obukhov length)
    - stab = formulation for stable regimes : 'dyer-hicks'  -- Dyer and Hicks (1970)
                                              'lettau'      -- Lettau (1979) 
                                              'holtslag-bruin' -- Holtslag and de Bruin (1988)
@@ -676,22 +681,21 @@ def PSI(z, Lmo, gamma=5, stab=None, unstab=None) :
    if stab is None or unstab is None:
        sys.exit('Stability correction type has to be specified (e.g.: stab=\'beljaars-holtslag\' and unstab=\'businger-dyer\')')
 
-   zeta = z/Lmo
-  
    ###############################
    if unstab == 'businger-dyer':
-     phiM = (1 - 16*zeta)**(-0.25)
-     phiH = (1 - 16*zeta)**(-0.5)
+     zeta_unstab = np.where (zeta<0, zeta, np.nan)
 
-     psiM = np.where (zeta<0, 2*np.log((1+phiM**(-1))/2) + np.log((1+phiM**(-2))/2) - 2*np.arctan(phiM**(-1)) + np.pi/2, 0.)
-     psiH = np.where (zeta<0, 2*np.log((1+phiH**(-1))/2), 0.)
+     phiM = (1 - 16*zeta_unstab)**(-0.25)
+     phiH = (1 - 16*zeta_unstab)**(-0.5)
+     psiM_unstab = 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2
+     psiH_unstab = 2*unp.log((1+phiH**(-1))/2)
    ################################
    elif unstab == 'kansas':
      phiM = (1 - 15*zeta)**(-0.25)
      phiH = 0.74*(1 - 9*zeta)**(-0.5)
 
-     psiM = np.where (zeta<0, 2*np.log((1+phiM**(-1))/2) + np.log((1+phiM**(-2))/2) - 2*np.arctan(phiM**(-1)) + np.pi/2, 0.)
-     psiH = np.where (zeta<0, 1.74*np.log((1+0.74*phiH**(-1))/1.74)+0.26*np.log((1-0.74*phiH**(-1))/0.26), 0.)
+     psiM = np.where (zeta<0, 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2, 0.)
+     psiH = np.where (zeta<0, 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log((1-0.74*phiH**(-1))/0.26), 0.)
    ################################
    elif unstab == 'holtslag1990':
      # I need to integrate the phi
@@ -706,10 +710,10 @@ def PSI(z, Lmo, gamma=5, stab=None, unstab=None) :
    elif unstab == 'fairall1996':
      y = (1 - 12.87*zeta)**(1/3) 
 
-     psi = np.where (zeta<0, 1.5*np.log((y**2+y+1)/3) - np.sqrt(3)*np.arctan((2*y+1)/np.sqrt(3)) + np.pi/np.sqrt(3), 0.)
+     psi = np.where (zeta<0, 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3), 0.)
 
-     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab = stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
-     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab = stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(zeta, stab = stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(zeta, stab = stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
    ################################
    elif unstab == 'grachev2000':
      a={'m':10.15,'h':34.15}
@@ -717,16 +721,16 @@ def PSI(z, Lmo, gamma=5, stab=None, unstab=None) :
      for s in ('m','h'):
        y = (1 - a[s]*zeta)**(1/3) 
 
-       psi[s] = np.where (zeta<0, 1.5*np.log((y**2+y+1)/3) - np.sqrt(3)*np.arctan((2*y+1)/np.sqrt(3)) + np.pi/np.sqrt(3), 0.)
+       psi[s] = np.where (zeta<0, 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3), 0.)
 
-     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab = stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi['m'], 0.) 
-     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(z, Lmo, stab = stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi['h'], 0.) 
+     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(zeta, stab = stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi['m'], 0.) 
+     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(zeta, stab = stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi['h'], 0.) 
    ################################  
    elif  unstab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
 
-     psiM = np.where(zeta<0, -(a * zeta + b*(zeta - c/d) * np.exp(-d * zeta) + b*c/d), 0.)
-     psiH = np.where(zeta<0, -(a * zeta + b*(zeta - c/d) * np.exp(-d * zeta) + b*c/d), 0.)
+     psiM = np.where(zeta<0, -(a * zeta + b*(zeta - c/d) * unp.exp(-d * zeta) + b*c/d), 0.)
+     psiH = np.where(zeta<0, -(a * zeta + b*(zeta - c/d) * unp.exp(-d * zeta) + b*c/d), 0.)
      # Beljaars and Holtslag do not propose an option for unstable cases but only for stable cases. This formulation is here
      # only to reproduce Elvidge et al (2016).
    else:
@@ -740,11 +744,11 @@ def PSI(z, Lmo, gamma=5, stab=None, unstab=None) :
    elif stab == 'lettau':
      x = 1 + 4.5*zeta
 
-     psiM = np.where (zeta>0, np.log((x**0.5+1)/2) + 2*np.log((x**0.25+1)/2) -2*np.arctan(x**0.25) + np.pi/2 + 4/3*(1-x**0.75), psiM)
-     psiH = np.where (zeta>0, 2*np.log((x**0.25+1)/2) -2*(x**1.5/3 + x**0.5 - 4/3), psiH)
+     psiM = np.where (zeta>0, unp.log((x**0.5+1)/2) + 2*unp.log((x**0.25+1)/2) -2*unp.arctan(x**0.25) + np.pi/2 + 4/3*(1-x**0.75), psiM)
+     psiH = np.where (zeta>0, 2*unp.log((x**0.25+1)/2) -2*(x**1.5/3 + x**0.5 - 4/3), psiH)
    ################################
    elif stab == 'holtslag-bruin':
-     psi = -3.75/0.35 - 0.7*zeta + 3.75/0.35*np.exp(-0.35*zeta) -0.75*zeta*np.exp(-0.35*zeta)
+     psi = -3.75/0.35 - 0.7*zeta + 3.75/0.35*unp.exp(-0.35*zeta) -0.75*zeta*unp.exp(-0.35*zeta)
 
      psiM = np.where (zeta>0, psi, psiM)
      psiH = np.where (zeta>0, psi, psiH)
@@ -757,21 +761,21 @@ def PSI(z, Lmo, gamma=5, stab=None, unstab=None) :
    elif stab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
 
-     psiM = np.where (zeta>0, -(a * zeta + b*(zeta - c/d) * np.exp(-d * zeta) + b*c/d), psiM)
-     psiH = np.where (zeta>0, -((1+2.*a*zeta/3)**(3./2) + b*(zeta-c/d)*np.exp(-d*zeta) + b*c/d - 1), psiH)
+     psiM = np.where (zeta>0, -(a * zeta + b*(zeta - c/d) * unp.exp(-d * zeta) + b*c/d), psiM)
+     psiH = np.where (zeta>0, -((1+2.*a*zeta/3)**(3./2) + b*(zeta-c/d)*unp.exp(-d*zeta) + b*c/d - 1), psiH)
    ################################
    elif stab == 'grachev':
-     x = (zeta+1)**(1/3)
-
-     psiM = np.where (zeta>0, -19.5*(x-1) + 3.25*0.3**(1/3)*(2*np.log((x+0.3**(1/3))/(1+0.3**(1/3))) - np.log((x**2-0.3**(1/3)*x+0.3**(2/3))/(1-0.3**(1/3)+0.3**(2/3))) +2*np.sqrt(3)*(np.arctan((2*x-0.3**(1/3))/(np.sqrt(3)*0.3**(1/3))) -np.arctan((2-0.3**(1/3))/(np.sqrt(3)*0.3**(1/3))))) , psiM)
-     psiH = np.where (zeta>0, -2.5*np.log(1+3*zeta+zeta**2) +5/(2*np.sqrt(5))*(np.log((2*zeta+3-np.sqrt(5))/(2*zeta+3+np.sqrt(5))) -np.log((3-np.sqrt(5))/(3+np.sqrt(5)))), psiH)
+     zeta_stab = np.where (zeta>0, zeta, np.nan)
+     x_stab = (zeta_stab+1)**(1/3)
+     psiM_stab = -19.5*(x_stab-1) + 3.25*0.3**(1/3)*(2*unp.log((x_stab+0.3**(1/3))/(1+0.3**(1/3))) - unp.log((x_stab**2-0.3**(1/3)*x_stab+0.3**(2/3))/(1-0.3**(1/3)+0.3**(2/3))) +2*unp.sqrt(3)*(unp.arctan((2*x_stab-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3))) -unp.arctan((2-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3)))))
+     psiH_stab = -2.5*unp.log(1+3*zeta_stab+zeta_stab**2) +5/(2*unp.sqrt(5))*(unp.log((2*zeta_stab+3-unp.sqrt(5))/(2*zeta_stab+3+unp.sqrt(5))) -unp.log((3-unp.sqrt(5))/(3+unp.sqrt(5))))
    ################################
    else:
      sys.exit('This option for stable cases is not coded yet.')
    ################################
    ################################
    
-   return (psiM,psiH)
+   return (psiM_stab,psiH_stab,psiM_unstab,psiH_unstab)
 ################################################################################
 def F(Rb, CDN, z, var='momentum', author='Louis') :
    """
@@ -812,7 +816,7 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
      
      c2 = c1*alpha*CDN*(z/z0+1)**0.5
 
-     fstab = (1+10*Rb/np.sqrt(Rb+1))**(-1)
+     fstab = (1+10*Rb/unp.sqrt(Rb+1))**(-1)
 
    else:
      sys.exit('Only Louis and LupkesGryanik version are coded for now')
@@ -844,7 +848,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    deltaq = q - qs
 
    # First guess of wind gustiness correction and neutral bulk transfer coefficients
-   Ucor = np.sqrt(u**2+0.5**2) 
+   Ucor = unp.sqrt(u**2+0.5**2) 
    cdn = 0.0015
    chn = 0.001
    cen = 0.001
@@ -871,9 +875,9 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
       sys.exit('Only coare2.5 and coare3.0 are coded for now')
 
    # First guess of bulk turbulent fluxes
-   ustar = np.sqrt(cd * Ucor**2)
-   thetastar = ch/np.sqrt(cd) * deltatheta
-   qstar = ce/np.sqrt(cd) * deltaq
+   ustar = unp.sqrt(cd * Ucor**2)
+   thetastar = ch/unp.sqrt(cd) * deltatheta
+   qstar = ce/unp.sqrt(cd) * deltaq
 
    # A few choices of methods used in the various COARE algorithms
    zsmod = {'coare2.5':'LKB','coare3.0':'coare3.0'}
@@ -905,9 +909,9 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      Ch = CS (CDN = Cdn, CSN = Chn, psiM = psiM, psiH = psiH)
      Ce = CS (CDN = Cdn, CSN = Cen, psiM = psiM, psiH = psiH)
      # Updated estimates of turbulent fluxes
-     ustar = np.sqrt(Cd * Ucor**2)
-     thetastar = Ch/np.sqrt(Cd) * deltatheta
-     qstar = Ce/np.sqrt(Cd) * deltaq
+     ustar = unp.sqrt(Cd * Ucor**2)
+     thetastar = Ch/unp.sqrt(Cd) * deltatheta
+     qstar = Ce/unp.sqrt(Cd) * deltaq
      # Update corrected wind speed for gustiness
      Ucor = np.where(z/lmo<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25), u)
      # Cool-skin is not implemented
