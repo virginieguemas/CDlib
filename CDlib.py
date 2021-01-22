@@ -680,22 +680,24 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
 
    if stab is None or unstab is None:
        sys.exit('Stability correction type has to be specified (e.g.: stab=\'beljaars-holtslag\' and unstab=\'businger-dyer\')')
+   # zeta discrimination between stab and unstab in order to avoid error with unp function when math domain is not Real.
    zeta_stab = np.where(zeta>0,zeta,np.nan)
    zeta_unstab = np.where(zeta<0,zeta,np.nan)
    ###############################
    if unstab == 'businger-dyer':
      phiM = (1 - 16*zeta_unstab)**(-0.25)
      phiH = (1 - 16*zeta_unstab)**(-0.5)
-
-     psiM = np.where (zeta<0, 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2, np.nan)
-     psiH = np.where (zeta<0, 2*unp.log((1+phiH**(-1))/2), np.nan)
+     
+     #Remove np.where as stable and unstable cases are already discriminated before.
+     psiM = 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2
+     psiH = 2*unp.log((1+phiH**(-1))/2)
    ################################
    elif unstab == 'kansas':
      phiM = (1 - 15*zeta_unstab)**(-0.25)
      phiH = 0.74*(1 - 9*zeta_unstab)**(-0.5)
 
-     psiM = np.where (zeta<0, 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2, 0.)
-     psiH = np.where (zeta<0, 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log((1-0.74*phiH**(-1))/0.26), 0.)
+     psiM = 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2
+     psiH = 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log((1-0.74*phiH**(-1))/0.26)
    ################################
    elif unstab == 'holtslag1990':
      # I need to integrate the phi
@@ -710,10 +712,10 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
    elif unstab == 'fairall1996':
      y = (1 - 12.87*zeta_unstab)**(1/3) 
 
-     psi = np.where (zeta<0, 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3), 0.)
+     psi = 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
 
-     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(zeta, stab = stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi, 0.) 
-     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(zeta, stab = stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi, 0.) 
+     psiM = 1/(1+zeta_unstab**2)*PSI(zeta_unstab, stab = stab, unstab = 'businger-dyer')[0] + zeta_unstab**2/(1+zeta_unstab**2)*psi 
+     psiH = 1/(1+zeta_unstab**2)*PSI(zeta_unstab, stab = stab, unstab = 'businger-dyer')[1] + zeta_unstab**2/(1+zeta_unstab**2)*psi
    ################################
    elif unstab == 'grachev2000':
      a={'m':10.15,'h':34.15}
@@ -721,16 +723,16 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
      for s in ('m','h'):
        y = (1 - a[s]*zeta_unstab)**(1/3) 
 
-       psi[s] = np.where (zeta<0, 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3), 0.)
+       psi[s] = 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
 
-     psiM = np.where (zeta<0, 1/(1+zeta**2)*PSI(zeta, stab = stab, unstab = 'businger-dyer')[0] + zeta**2/(1+zeta**2)*psi['m'], 0.) 
-     psiH = np.where (zeta<0, 1/(1+zeta**2)*PSI(zeta, stab = stab, unstab = 'businger-dyer')[1] + zeta**2/(1+zeta**2)*psi['h'], 0.) 
+     psiM = 1/(1+zeta_unstab**2)*PSI(zeta_unstab, stab = stab, unstab = 'businger-dyer')[0] + zeta_unstab**2/(1+zeta_unstab**2)*psi['m']
+     psiH = 1/(1+zeta_unstab**2)*PSI(zeta_unstab, stab = stab, unstab = 'businger-dyer')[1] + zeta_unstab**2/(1+zeta_unstab**2)*psi['h']
    ################################  
    elif  unstab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
 
-     psiM = np.where(zeta<0, -(a * zeta + b*(zeta - c/d) * unp.exp(-d * zeta) + b*c/d), 0.)
-     psiH = np.where(zeta<0, -(a * zeta + b*(zeta - c/d) * unp.exp(-d * zeta) + b*c/d), 0.)
+     psiM = -(a * zeta_unstab + b*(zeta_unstab - c/d) * unp.exp(-d * zeta_unstab) + b*c/d)
+     psiH = -(a * zeta_unstab + b*(zeta_unstab - c/d) * unp.exp(-d * zeta_unstab) + b*c/d)
      # Beljaars and Holtslag do not propose an option for unstable cases but only for stable cases. This formulation is here
      # only to reproduce Elvidge et al (2016).
    else:
@@ -738,17 +740,17 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
    ################################
    ################################
    if stab == 'dyer-hicks':
-     psiM = np.where (zeta>0, -gamma*zeta, psiM)
-     psiH = np.where (zeta>0, -gamma*zeta, psiM)
+     psiM = np.where (zeta>0, -gamma*zeta_stab, psiM)
+     psiH = np.where (zeta>0, -gamma*zeta_stab, psiM)
    ################################
    elif stab == 'lettau':
-     x = 1 + 4.5*zeta
+     x = 1 + 4.5*zeta_stab
 
      psiM = np.where (zeta>0, unp.log((x**0.5+1)/2) + 2*unp.log((x**0.25+1)/2) -2*unp.arctan(x**0.25) + np.pi/2 + 4/3*(1-x**0.75), psiM)
      psiH = np.where (zeta>0, 2*unp.log((x**0.25+1)/2) -2*(x**1.5/3 + x**0.5 - 4/3), psiH)
    ################################
    elif stab == 'holtslag-bruin':
-     psi = -3.75/0.35 - 0.7*zeta + 3.75/0.35*unp.exp(-0.35*zeta) -0.75*zeta*unp.exp(-0.35*zeta)
+     psi = -3.75/0.35 - 0.7*zeta_stab + 3.75/0.35*unp.exp(-0.35*zeta_stab) -0.75*zeta_stab*unp.exp(-0.35*zeta_stab)
 
      psiM = np.where (zeta>0, psi, psiM)
      psiH = np.where (zeta>0, psi, psiH)
@@ -761,8 +763,8 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
    elif stab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
 
-     psiM = np.where (zeta>0, -(a * zeta + b*(zeta - c/d) * unp.exp(-d * zeta) + b*c/d), psiM)
-     psiH = np.where (zeta>0, -((1+2.*a*zeta/3)**(3./2) + b*(zeta-c/d)*unp.exp(-d*zeta) + b*c/d - 1), psiH)
+     psiM = np.where (zeta>0, -(a * zeta_stab + b*(zeta_stab - c/d) * unp.exp(-d * zeta_stab) + b*c/d), psiM)
+     psiH = np.where (zeta>0, -((1+2.*a*zeta_stab/3)**(3./2) + b*(zeta_stab-c/d)*unp.exp(-d*zeta_stab) + b*c/d - 1), psiH)
    ################################
    elif stab == 'grachev':
      x = (zeta_stab+1)**(1/3)
