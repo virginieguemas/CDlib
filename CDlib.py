@@ -687,8 +687,8 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
      phiM = (1 - 16*zeta_unstab)**(-0.25)
      phiH = (1 - 16*zeta_unstab)**(-0.5)
 
-     psiM = np.where (zeta<0, 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2, 0.)
-     psiH = np.where (zeta<0, 2*unp.log((1+phiH**(-1))/2), 0.)
+     psiM = np.where (zeta<0, 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2, np.nan)
+     psiH = np.where (zeta<0, 2*unp.log((1+phiH**(-1))/2), np.nan)
    ################################
    elif unstab == 'kansas':
      phiM = (1 - 15*zeta_unstab)**(-0.25)
