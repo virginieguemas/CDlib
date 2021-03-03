@@ -55,6 +55,10 @@ def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
    """
 
    if z0 is not None and z is not None:
+     z0 = np.where(unp.nominal_values(z0)==0,np.nan,z0)
+     z0 = np.where(unp.nominal_values(z0)<0,np.nan,z0)
+     z0 = np.where(unp.nominal_values(z0)==np.inf,np.nan,z0)
+     #
      CDn = (k/unp.log(z/z0))**2
    elif u is not None and ustar is not None and f is not None:
      CD = (ustar**2)/(u**2)
@@ -171,6 +175,10 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    ##################################
    elif method == 'obs':
      if u is not None and ustar is not None and psi is not None and z is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
+       u = np.where(unp.nominal_values(u/ustar*k + psi)<=-1E2,np.nan,u)
+       u = np.where(unp.nominal_values(u/ustar*k + psi)>=1E2,np.nan,u)
+       #
        z0 = z/unp.exp(u/ustar*k + psi)
      else: 
        sys.exit('With option method = \'obs\', input z, u, ustar and psi are required.')
@@ -178,6 +186,8 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    ##################################
    elif method == 'coare2.5':
      if alpha is not None and ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
+       #
        z0 = alpha*ustar**2/g + 0.11*meteolib.NU(T)/ustar
      else:
        sys.exit('With option method = \'coare2.5\', input alpha, ustar and T as required') 
@@ -417,7 +427,7 @@ def U(z, ustar, z0, psi=0) :
 
    return u
 ################################################################################
-def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=None, beta=1.25):
+def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=None, beta=1.25, zeta=None):
    """
    This function computes the corrected wind speed to account for gustiness.
    With option method = 'godfreybeljaars', (Godfrey and Beljaars, 1991) 
@@ -437,31 +447,36 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
    - the convective boundary layer height h (in m), typically h=600m.
    With option method = 'jordan' (Jordan et al, 1999) used in Andreas et al (2010),
    the function needs:
-   - the horizontal wind speed u (in m/s). 
+   - the horizontal wind speed u (in m/s).
+   - the stability parameter zeta (only used to calculate the Jordan correction for the stable cases)
 
    Author : Virginie Guemas   - December 2020
    Modified : Virginie Guemas - January 2021 - Option fairall which approximates godfreybeljaars 
    """
    
    if method == 'godfreybeljaars':
-     if u is not None and thetav is not None and h is not None and Q0v is not None:
-       ug = beta * (g/thetav*h*Q0v)**(1/3)
+     if u is not None and thetav is not None and h is not None and Q0v is not None and zeta is not None:
+         #      Je propose un double test pour selectionner les points instables car d'une part, il faut être cohérent avec le calcul de zeta (si zeta est calculé avec thetavstar par exemple) et il faut que le calcul de Ug donne un Reel, cad thetav>0. Idem pour la double condition pour la method 'fairall'.
+       Q0v_pos = np.where(Q0v>0, Q0v, np.nan)
+       ug = np.where((zeta<0)&(Q0v>0), beta * (g/thetav*h*Q0v_pos)**(1/3), 0)
        ucor = unp.sqrt(u**2+ug**2)
      else:
        sys.exit('With option method = \'godfreybeljaars\', input u, thetav, h and Q0v are required.')
 
    elif method == 'fairall':
      if u is not None and T is not None and h is not None and Q0 is not None  and E0 is not None:
-       ug = beta * (g/T*h*(Q0+0.61*T*E0))**(1/3)
+       Q0v = Q0+0.61*T*E0
+       Q0v_pos = np.where(Q0v>0, Q0v, np.nan)
+       ug = np.where((zeta<0)&(Q0v>0), beta * (g/T*h*Q0v_pos)**(1/3), 0.)
        ucor = unp.sqrt(u**2+ug**2)
      else:
        sys.exit('With option method = \'fairall\', input u, T, h, Q0 and E0 are required.')
 
    elif method == 'jordan':
-     if u is not None:
-       ucor = u + 0.5/unp.cosh(u)
+     if u is not None and zeta is not None:
+       ucor = np.where(zeta>0, u + 0.5/unp.cosh(u), u)
      else:
-       sys.exit('With option method = \'jordan\', input u is required.')
+       sys.exit('With option method = \'jordan\', input u is required. Zeta is also required in order to calculate the correction only for the stable cases.')
 
    else:
      sys.exit('Valid methods are \'godfreybeljaars\', \'fairall\' and \'jordan\'.')
@@ -498,6 +513,7 @@ def LMO(ustar, thetav, thetavstar=None, Q0v=None) :
    beta = g/thetav 
 
    if Q0v is not None:
+     Q0v = np.where(unp.nominal_values(Q0v)==0,np.nan,Q0v)
      Lmo = -(ustar**3)/(k*beta*Q0v)
      if thetavstar is not None:
        Qvbis = - ustar*thetavstar
@@ -651,6 +667,7 @@ def TAUR(u, R, gamma=0.85) :
    return Taurain   
 ################################################################################
 def ZETA(z,Lmo) :
+   Lmo = np.where(unp.nominal_values(Lmo)==0,np.nan,Lmo)
    zeta = z/Lmo
    return zeta
 ################################################################################
@@ -697,7 +714,8 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
      phiH = 0.74*(1 - 9*zeta_unstab)**(-0.5)
 
      psiM = 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2
-     psiH = 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log((1-0.74*phiH**(-1))/0.26)
+#     psiH = 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log((1-0.74*phiH**(-1))/0.26)
+     psiH = 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log(np.abs((1-0.74*phiH**(-1)))/0.26)
    ################################
    elif unstab == 'holtslag1990':
      # I need to integrate the phi
