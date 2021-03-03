@@ -26,6 +26,7 @@
 #                    - BULK         -  Bulk algorithms for turbulent fluxes
 #
 # Author : Virginie Guemas - 2020
+# Modified : Sebastien Blein - January 2021 (uncertainty calculation version)
 ################################################################################
 import numpy as np
 import meteolib
@@ -681,7 +682,7 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
                                              'beljaars-holtslag' -- Beljaars and Holtslag (1991)
                                              'grachev'     -- Grachev (2007)
    - unstab = formulation for unstable regimes : 'businger-dyer' -- Paulson (1970)
-                                                 'kansas'        -- Businger et al (1971)
+                                                 'kansas'        -- Businger et al (1971) => not coded as the phiH function is not integrable.
                                                  'fairall1996'   -- Fairall et al (1996)
                                                  'grachev2000'   -- Grachev et al (2000)
    - the gamma factor for the 'dyer-hicks' option which can range between about 5 
@@ -708,14 +709,6 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
      #Remove np.where as stable and unstable cases are already discriminated before.
      psiM = 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2
      psiH = 2*unp.log((1+phiH**(-1))/2)
-   ################################
-   elif unstab == 'kansas':
-     phiM = (1 - 15*zeta_unstab)**(-0.25)
-     phiH = 0.74*(1 - 9*zeta_unstab)**(-0.5)
-
-     psiM = 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2
-#     psiH = 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log((1-0.74*phiH**(-1))/0.26)
-     psiH = 1.74*unp.log((1+0.74*phiH**(-1))/1.74)+0.26*unp.log(np.abs((1-0.74*phiH**(-1)))/0.26)
    ################################
    elif unstab == 'holtslag1990':
      # I need to integrate the phi
