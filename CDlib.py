@@ -104,6 +104,8 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
    """
 
    if zs is not None and z0 is not None and z is not None:
+     zs = np.where(unp.nominal_values(zs)<=0,np.nan,zs)
+     z0 = np.where(unp.nominal_values(z0)<=0,np.nan,z0)
      CSn = k**2/(unp.log(z/zs)*unp.log(z/z0))
    elif ustar is not None and sstar is not None and u is not None and deltas is not None and f is not None: 
      CS = -(ustar*sstar)/(u*deltas)
