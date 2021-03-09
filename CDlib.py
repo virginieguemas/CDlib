@@ -567,13 +567,17 @@ def LMOapprox(ustar, T, thetastar=None, qstar=None, Q0=None, E0=None) :
    beta = g/T
 
    if Q0 is not None and E0 is not None:
-     Lmo = -(ustar**3)/(k*beta*(Q0+0.61*T*E0))
+     Q0v = np.where(unp.nominal_values(Q0+0.61*T*E0)==0,np.nan,Q0+0.61*T*E0)
+     Lmo = -(ustar**3)/(k*beta*Q0v)
    elif thetastar is not None and qstar is not None:
-     Lmo = (ustar**2)/(k*beta*(thetastar+0.61*T*qstar))
+     thetavstar = np.where(unp.nominal_values(thetastar+0.61*T*qstar)==0,np.nan,thetastar+0.61*T*qstar)
+     Lmo = (ustar**2)/(k*beta*thetavstar)
    elif Q0 is not None and qstar is not None:
-     Lmo = -(ustar**3)/(k*beta*(Q0+0.61*T*(-ustar*qstar)))
+     Q0v = np.where(unp.nominal_values(Q0+0.61*T*(-ustar*qstar))==0,np.nan,Q0+0.61*T*(-ustar*qstar))
+     Lmo = -(ustar**3)/(k*beta*Q0v)
    else:
-     Lmo = -(ustar**3)/(k*beta*((-ustar*thetastar)+0.61*T*E0))
+     Q0v = np.where(unp.nominal_values((-ustar*thetastar)+0.61*T*E0)==0,np.nan,(-ustar*thetastar)+0.61*T*E0)
+     Lmo = -(ustar**3)/(k*beta*Q0v)
 
    return Lmo
 ################################################################################
