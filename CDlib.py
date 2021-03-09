@@ -510,6 +510,7 @@ def S(z, s0, sstar, zs, psi=0) :
    Author : Virginie Guemas - October 2020 
    """
 
+   zs = np.where(unp.nominal_values(zs)<=0,np.nan,zs)
    s = s0 + sstar/k * (unp.log(z/zs) - psi)
 
    return s
