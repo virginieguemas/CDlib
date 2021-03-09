@@ -438,7 +438,9 @@ def U(z, ustar, z0, psi=0) :
 ################################################################################
 def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=None, beta=1.25, zeta=None):
    """
-   This function computes the corrected wind speed to account for gustiness.
+   This function computes the corrected wind speed to account for gustiness. It needs :
+   - the stability parameter zeta to verify the stability conditions to apply a particular gustiness correction
+   are verified.
    With option method = 'godfreybeljaars', (Godfrey and Beljaars, 1991) 
    the function needs : 
    - the horizontal wind speed u (in m/s),
@@ -457,17 +459,22 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
    With option method = 'jordan' (Jordan et al, 1999) used in Andreas et al (2010),
    the function needs:
    - the horizontal wind speed u (in m/s).
-   - the stability parameter zeta (only used to calculate the Jordan correction for the stable cases)
 
    Author : Virginie Guemas   - December 2020
    Modified : Virginie Guemas - January 2021 - Option fairall which approximates godfreybeljaars 
    """
+
+   if zeta is None:
+     sys.exit('Please provide zeta so that the function can verify whether the method selected 
+               is suitable for the stability')
    
    if method == 'godfreybeljaars':
-     if u is not None and thetav is not None and h is not None and Q0v is not None and zeta is not None:
-         #      Je propose un double test pour selectionner les points instables car d'une part, il faut être cohérent avec le calcul de zeta (si zeta est calculé avec thetavstar par exemple) et il faut que le calcul de Ug donne un Reel, cad thetav>0. Idem pour la double condition pour la method 'fairall'.
-       Q0v_pos = np.where(Q0v>0, Q0v, np.nan)
-       ug = np.where((zeta<0)&(Q0v>0), beta * (g/thetav*h*Q0v_pos)**(1/3), 0)
+     if u is not None and thetav is not None and h is not None and Q0v is not None:
+       # Both 'godfreybeljaars' and 'fairall' methods to estimate the wind gustiness 
+       # correction are valid only in unstable cases. 
+       # Both conditions on zeta and Q0v are applied in case zeta is computed using
+       # some other variables than Q0v (thetastar for example).
+       ug = np.where((zeta<0)&(Q0v>0), beta * (g/thetav*h*Q0v)**(1/3), 0)
        ucor = unp.sqrt(u**2+ug**2)
      else:
        sys.exit('With option method = \'godfreybeljaars\', input u, thetav, h and Q0v are required.')
@@ -475,17 +482,16 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
    elif method == 'fairall':
      if u is not None and T is not None and h is not None and Q0 is not None  and E0 is not None:
        Q0v = Q0+0.61*T*E0
-       Q0v_pos = np.where(Q0v>0, Q0v, np.nan)
-       ug = np.where((zeta<0)&(Q0v>0), beta * (g/T*h*Q0v_pos)**(1/3), 0.)
+       ug = np.where((zeta<0)&(Q0v>0), beta * (g/T*h*Q0v)**(1/3), 0.)
        ucor = unp.sqrt(u**2+ug**2)
      else:
        sys.exit('With option method = \'fairall\', input u, T, h, Q0 and E0 are required.')
 
    elif method == 'jordan':
-     if u is not None and zeta is not None:
+     if u is not None:
        ucor = np.where(zeta>0, u + 0.5/unp.cosh(u), u)
      else:
-       sys.exit('With option method = \'jordan\', input u is required. Zeta is also required in order to calculate the correction only for the stable cases.')
+       sys.exit('With option method = \'jordan\', input u is required.')
 
    else:
      sys.exit('Valid methods are \'godfreybeljaars\', \'fairall\' and \'jordan\'.')
