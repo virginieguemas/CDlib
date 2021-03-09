@@ -331,6 +331,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    ###################################
    elif method == 'LKB': 
      if rstar is not None and ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
        if s == 'T':
          a = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0.177, np.where(rstar<0.825, 1.376, np.where(rstar<3., 1.026, np.where(rstar<10., 1.625, np.where(rstar<30., 4.661, 34.904))))))
          b = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0, np.where(rstar<0.825, 0.929, np.where(rstar<3., -0.599, np.where(rstar<10., -1.018, np.where(rstar<30., -1.475, -2.067))))))
@@ -382,6 +383,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    ##################################
    elif method == 'simplebrutsaert':
      if ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
        if s == 'T':
          r = 0.4
        elif s == 'Q':
@@ -399,6 +401,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    ##################################
    elif method == 'mondonredelsperger':
      if ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
        if s == 'T':
          zs = np.where(ustar>0.23, 0.14*meteolib.NU(T)/(ustar-0.2) + 7*10**(-6), 0.015*ustar**2/g+0.18*meteolib.NU(T)/ustar)
        elif s == 'Q':
