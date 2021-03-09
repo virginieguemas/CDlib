@@ -532,9 +532,10 @@ def LMO(ustar, thetav, thetavstar=None, Q0v=None) :
      Lmo = -(ustar**3)/(k*beta*Q0v)
      if thetavstar is not None:
        Qvbis = - ustar*thetavstar
-       if np.max(np.abs((Qvbis-Q0v)/Q0v)) > 0.001 :
+       if np.nanmax(np.abs((Qvbis-Q0v)/Q0v)) > 0.001 :
          sys.exit('Q0v and -ustar*thetavstar differ')
    else:
+     thetavstar = np.where(unp.nominal_values(thetavstar)==0,np.nan,thetavstar)
      Lmo = (ustar**2)/(k*beta*thetavstar)
 
    return Lmo
