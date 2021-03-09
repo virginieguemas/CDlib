@@ -685,11 +685,19 @@ def TAUR(u, R, gamma=0.85) :
 
    Taurain = gamma*R*u 
 
-   return Taurain   
+   return Taurain
 ################################################################################
 def ZETA(z,Lmo) :
+   """
+   This function computes the Monin-Obukhov stability parameter zeta as a 
+   function of the height z and the Monin-Obukhov length Lmo.
+
+   Author : Sebastien Blein - January 2021
+   """
+
    Lmo = np.where(unp.nominal_values(Lmo)==0,np.nan,Lmo)
    zeta = z/Lmo
+
    return zeta
 ################################################################################
 def PSI(zeta, gamma=5, stab=None, unstab=None) :
