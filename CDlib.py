@@ -26,7 +26,7 @@
 #                    - BULK         -  Bulk algorithms for turbulent fluxes
 #
 # Author : Virginie Guemas - 2020
-# Modified : Sebastien Blein - January 2021 - Version that accepts unumpy arrays 
+# Modified : Sebastien Blein - January 2021 - Version that accepts unumpy arrays
 #                              storing uncertainties as input and propagates those
 #                              uncertainties until the output, still compatible
 #                              with an usage without uncertainties
@@ -81,7 +81,7 @@ def CD (CDN=None, psi=None) :
    """
   
    if CDN is not None and psi is not None : 
-     Cd = CDN / (1-unp.sqrt(CDN)/k*psi)**2    
+     Cd = CDN / (1-unp.sqrt(CDN)/k*psi)**2
    else:
      sys.exit('CDN and psi are required to compute CD')
 
@@ -123,7 +123,7 @@ def CS (CDN, CSN, psiM, psiH) :
    """
   
    if CDN is not None and CSN is not None and psiM is not None and psiH is not None : 
-     Cs = CSN / ((1-CSN/(k*unp.sqrt(CDN))*psiH)*(1-unp.sqrt(CDN)/k*psiM))    
+     Cs = CSN / ((1-CSN/(k*unp.sqrt(CDN))*psiH)*(1-unp.sqrt(CDN)/k*psiM))
    else:
      sys.exit('CDN, CSN, psiM and psiH are required to compute CH or CE')
 
@@ -198,6 +198,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    ##################################
    elif method == 'coare3.0':
      if u is not None and ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
        u10n = u
        err = 10
        while err>0.01: 
@@ -215,6 +216,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      # What appears in SURFEX documentation is not exactly the same: u is used instead of u10n and a different formula
      # is used for hs.
      if u is not None and ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
        u10n = u
        err = 10
        while err>0.01:
@@ -233,6 +235,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      # What is coded here corresponds to what is reported in Fairall et al (2003) implemented as an option in COARE3.0.
      # What appears in SURFEX documentation is not exactly the same : u is used instead of U10n
      if u is not None and ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
        u10n = u
        err = 10
        while err>0.01:
