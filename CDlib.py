@@ -465,8 +465,7 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
    """
 
    if zeta is None:
-     sys.exit('Please provide zeta so that the function can verify whether the method selected
-               is suitable for the stability')
+     sys.exit('Please provide zeta so that the function can verify whether the method selected is suitable for the stability')
    
    if method == 'godfreybeljaars':
      if u is not None and thetav is not None and h is not None and Q0v is not None:
