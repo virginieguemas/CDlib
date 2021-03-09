@@ -842,6 +842,7 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
      else:
        sys.exit('var can be momentum, heat or moisture only')
      
+     z0 = np.where(unp.nominal_values(z0)==0,np.nan,z0)
      c2 = c1*alpha*CDN*(z/z0)**0.5
 
      fstab = (1+c1/2*Rb)**(-2)
@@ -856,6 +857,7 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
      else:
        sys.exit('var can be momentum, heat or moisture only')
      
+     z0 = np.where(unp.nominal_values(z0)==0,np.nan,z0)
      c2 = c1*alpha*CDN*(z/z0+1)**0.5
 
      fstab = (1+10*Rb/unp.sqrt(Rb+1))**(-1)
