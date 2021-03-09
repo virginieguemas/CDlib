@@ -892,7 +892,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    deltaq = q - qs
 
    # First guess of wind gustiness correction and neutral bulk transfer coefficients
-   Ucor = unp.sqrt(u**2+0.5**2) 
+   Ucor = unp.sqrt(u**2+0.5**2)
    cdn = 0.0015
    chn = 0.001
    cen = 0.001
@@ -909,6 +909,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      # First guess based on Grachev and Fairall (1997) estimate of stability
      Rb = RB(thetav = T, Dthetav = meteolib.Thetav(theta,q) - meteolib.Thetav(thetas,qs), u = u, v = 0, z = z) 
      # Fairall et al 2003 use T instead of thetav in the estimate of beta = g/thetav
+     Rb = np.where(unp.nominal_values(Rb)==4.5,np.nan,Rb)
      zeta = 10*Rb/(1+Rb/(-4.5))
      (psiM, psiH) = PSI(zeta, gamma = 4.7, stab='beljaars-holtslag', unstab='grachev2000')
      cd = CD (CDN = cdn, psi = psiM)
@@ -958,7 +959,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      thetastar = Ch/unp.sqrt(Cd) * deltatheta
      qstar = Ce/unp.sqrt(Cd) * deltaq
      # Update corrected wind speed for gustiness
-     Ucor = np.where(z/lmo<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25), u)
+     Ucor = np.where(zeta<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25), u)
      # Cool-skin is not implemented
      count = count + 1
    # Webb correction, precipitation correction and warm-layer corrections should be included when getting out of the loop 
