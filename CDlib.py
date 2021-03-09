@@ -26,7 +26,10 @@
 #                    - BULK         -  Bulk algorithms for turbulent fluxes
 #
 # Author : Virginie Guemas - 2020
-# Modified : Sebastien Blein - January 2021 (uncertainty calculation version)
+# Modified : Sebastien Blein - January 2021 - Version that accepts unumpy arrays 
+#                              storing uncertainties as input and propagates those
+#                              uncertainties until the output, still compatible
+#                              with an usage without uncertainties
 ################################################################################
 import numpy as np
 import meteolib
@@ -56,8 +59,7 @@ def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
    """
 
    if z0 is not None and z is not None:
-     z0 = np.where(unp.nominal_values(z0)==0,np.nan,z0)
-     z0 = np.where(unp.nominal_values(z0)<0,np.nan,z0)
+     z0 = np.where(unp.nominal_values(z0)<=0,np.nan,z0)
      z0 = np.where(unp.nominal_values(z0)==np.inf,np.nan,z0)
      #
      CDn = (k/unp.log(z/z0))**2
