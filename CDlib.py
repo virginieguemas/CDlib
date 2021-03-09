@@ -910,7 +910,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      Rb = RB(thetav = T, Dthetav = meteolib.Thetav(theta,q) - meteolib.Thetav(thetas,qs), u = u, v = 0, z = z) 
      # Fairall et al 2003 use T instead of thetav in the estimate of beta = g/thetav
      zeta = 10*Rb/(1+Rb/(-4.5))
-     (psiM, psiH) = PSI(z, z/zeta, gamma = 4.7, stab='beljaars-holtslag', unstab='grachev2000')
+     (psiM, psiH) = PSI(zeta, gamma = 4.7, stab='beljaars-holtslag', unstab='grachev2000')
      cd = CD (CDN = cdn, psi = psiM)
      ch = CS (CDN = cdn, CSN = chn, psiM = psiM, psiH = psiH)
      ce = CS (CDN = cdn, CSN = cen, psiM = psiM, psiH = psiH)
@@ -934,6 +934,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    while count < ncount[method]:
      # Monin-Obukhov length depends on turbulent fluxes
      lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
+     zeta = ZETA(z, lmo)
      # Aerodynamic roughness depends on friction velocity
      z0 = Z0(method = method, alpha=0.011, u = u, ustar = ustar, T = T)
      # Roughness Reynolds number depends on friction velocity and aerodynamic roughness
@@ -946,7 +947,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      Chn = CSN (zs = z0T, z0 = z0, z = z) 
      Cen = CSN (zs = z0q, z0 = z0, z = z) 
      # Stability correction depends on Monin-Obukov length
-     (psiM, psiH) = PSI(z, lmo, gamma = 4.7, stab = psistab[method], unstab = psiunstab[method])
+     (psiM, psiH) = PSI(zeta, gamma = 4.7, stab = psistab[method], unstab = psiunstab[method])
                   # I am unsure about the 4.7 factor which is not stated clearly in Fairall et al 1996
      # Transfer coefficients depend on neutral transfer coefficients and stability corrections
      Cd = CD (CDN = Cdn, psi = psiM)
