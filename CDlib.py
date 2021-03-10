@@ -328,7 +328,9 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    ###################################
    elif method == 'obs':
      if z is not None and deltas is not None and sstar is not None and psi is not None: 
-       zs = z/unp.exp(deltas/sstar*k + psi)
+       tmp = unp.exp(deltas/sstar*k + psi)
+       tmp = np.where(unp.nominal_values(tmp)==0,np.nan,tmp)
+       zs = z/tmp
      else: 
        sys.exit('With option method = \'obs\', input z, deltas, sstar and psi are required.')
 
