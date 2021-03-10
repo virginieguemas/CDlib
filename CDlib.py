@@ -56,6 +56,7 @@ def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
    - the multiplicative stability correction f.
 
    Author : Virginie Guemas - October 2020 
+   Modified : January 2021 - Sebastien Blein - Uncertainty propagation
    """
 
    if z0 is not None and z is not None:
@@ -78,6 +79,7 @@ def CD (CDN=None, psi=None) :
    psi.
 
    Author : Virginie Guemas - January 2021 
+   Modified : January 2021 - Sebastien Blein - Uncertainty propagation
    """
   
    if CDN is not None and psi is not None : 
@@ -101,6 +103,7 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
    - the multiplicative stability correction f.
 
    Author : Virginie Guemas - October 2020 
+   Modified : January 2021 - Sebastien Blein - Uncertainty propagation
    """
 
    if zs is not None and z0 is not None and z is not None:
@@ -124,6 +127,7 @@ def CS (CDN, CSN, psiM, psiH) :
    and the additive stability correction psiM for momentum and psiH for heat or humidity.
 
    Author : Virginie Guemas - January 2021 
+   Modified : January 2021 - Sebastien Blein - Uncertainty propagation
    """
   
    if CDN is not None and CSN is not None and psiM is not None and psiH is not None : 
@@ -168,9 +172,10 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    - the temperature T (in Kelvin).
 
    Author : Virginie Guemas - October 2020 
-   Modified : Virginie Guemas - December 2020 - Option Smith (1988) formula used in COARE 2.5 (Fairall, 1996) 
+   Modified : December 2020 - Virginie Guemas - Option Smith (1988) formula used in COARE 2.5 (Fairall, 1996)
                                                 Option COARE 3.0 (Fairall et al 2003)
                                                 Options Taylor and Yelland (2001) and Oost et al (2002)
+              January 2021  - Sebastien Blein - Uncertainty propagation
    """
 
    if method == 'CN': 
@@ -313,10 +318,11 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    - the aerodynamic roughness length z0 (in m),
 
    Author : Virginie Guemas - October 2020 
-   Modified : Virginie Guemas - December 2020 - Option LKB (Liu et al, 1979) used in COARE2.5 (Fairall et al 1996) 
+   Modified : December 2020 - Virginie Guemas - Option LKB (Liu et al, 1979) used in COARE2.5 (Fairall et al 1996)
                                                 Option Andreas (1987)
                                                 Option Brutsaert (1982) simplified model
                                                 Option COARE 3.0 (Fairall et al, 2003) and (Garratt, 1992) and revised (Garratt, 1992) as suggested in Fairall et al, 2003
+              January 2021  - Sebastien Blein - Uncertainty propagation
    """
 
    if method == 'CN': 
@@ -436,6 +442,7 @@ def U(z, ustar, z0, psi=0) :
    This funcion computes the wind speed (in m/s) at height z (in m) as a fonction of the friction velocity in ustar in (m/s), the aerodynamic roughness length z0 (in m), and the additive stability correction psi.
 
    Author : Virginie Guemas - October 2020 
+   Modified : January 2021  - Sebastien Blein - Uncertainty propagation
    """
 
    u = ustar/k * (unp.log(z/z0) - psi)
@@ -467,7 +474,9 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
    - the horizontal wind speed u (in m/s).
 
    Author : Virginie Guemas   - December 2020
-   Modified : Virginie Guemas - January 2021 - Option fairall which approximates godfreybeljaars 
+   Modified : January 2021 - Virginie Guemas - Option fairall which approximates godfreybeljaars
+              January 2021 - Sebastien Blein - Uncertainty propagation
+                                               Verify whether stability allows gustiness correction
    """
 
    if zeta is None:
@@ -513,6 +522,7 @@ def S(z, s0, sstar, zs, psi=0) :
    - the height z (in m).
 
    Author : Virginie Guemas - October 2020 
+   Modified : January 2021  - Sebastien Blein - Uncertainty propagation
    """
 
    zs = np.where(unp.nominal_values(zs)<=0,np.nan,zs)
@@ -526,6 +536,7 @@ def LMO(ustar, thetav, thetavstar=None, Q0v=None) :
    This function computes the Monin-Obukhov length (in meters) either as a function of the virtual temperature scaling parameter thetavstar (in Kelvin) or as a function of the surface virtual temperature flux (K.m.s-1). It also requires the friction velocity (in m.s-1) and the layer-average virtual potential temperature (in Kelvin). 
 
    Author : Virginie Guemas - October 2020 
+   Modified : January 2021  - Sebastien Blein - Uncertainty propagation
    """
    meteolib.check_T(thetav)
 
@@ -561,6 +572,7 @@ def LMOapprox(ustar, T, thetastar=None, qstar=None, Q0=None, E0=None) :
    - the temperature (in Kelvin).
 
    Author : Virginie Guemas - January 2021
+   Modified : January 2021  - Sebastien Blein - Uncertainty propagation
    """
    meteolib.check_T(T)
    
@@ -723,9 +735,10 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
    Large and Pond, 1982; Högström, 1988) - 4.7 seems to be used in COARE2.5
 
    Author : Virginie Guemas - September 2020
-   Modified : Sebastien Blein - December 2020 (correct Beljaars and Holtslag 1991)
-              Virginie Guemas - December 2020 (add kansas, fairall and holtslag-bruin)
-              Virginie Guemas - January 2021 (include factor gamma to tune the dyer-hicks option. Ex: 4.7 for COARE2.5)
+   Modified : December 2020 - Sebastien Blein - correct Beljaars and Holtslag 1991
+              December 2020 - Virginie Guemas - add kansas, fairall and holtslag-bruin
+              January 2021  - Virginie Guemas - include factor gamma to tune the dyer-hicks option. Ex: 4.7 for COARE2.5
+              January 2021  - Sebastien Blein - Uncertainty propagation
    """
    np.seterr(invalid='ignore')
 
@@ -835,6 +848,7 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
    - author = 'Louis' / 'LupkesGryanik'
 
    Author : Virginie Guemas - September 2020 
+   Modified : January 2021  - Sebastien Blein - Uncertainty propagation
    """
   
    z0=CDlib.z0(CDN)
@@ -893,6 +907,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    are not included.
 
    Author : Virginie Guemas - January 2021  
+   Modified : January 2021  - Sebastien Blein - Uncertainty propagation
    """
    deltatheta = theta - thetas
    deltaq = q - qs
