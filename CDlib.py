@@ -965,7 +965,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      thetastar = Ch/unp.sqrt(Cd) * deltatheta
      qstar = Ce/unp.sqrt(Cd) * deltaq
      # Update corrected wind speed for gustiness
-     Ucor = np.where(zeta<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25), u)
+     Ucor = np.where(zeta<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25, zeta = zeta), u)
      # Cool-skin is not implemented
      count = count + 1
    # Webb correction, precipitation correction and warm-layer corrections should be included when getting out of the loop 
