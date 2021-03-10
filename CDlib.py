@@ -183,8 +183,8 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    elif method == 'obs':
      if u is not None and ustar is not None and psi is not None and z is not None:
        ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
-       u = np.where(unp.nominal_values(u/ustar*k + psi)<=-1E2,np.nan,u)
-       u = np.where(unp.nominal_values(u/ustar*k + psi)>=1E2,np.nan,u)
+       u = np.where(unp.nominal_values(u/ustar*k + psi)<=-1E3,np.nan,u)
+       u = np.where(unp.nominal_values(u/ustar*k + psi)>=1E3,np.nan,u)
        #
        z0 = z/unp.exp(u/ustar*k + psi)
      else: 
