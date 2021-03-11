@@ -488,7 +488,9 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
        # correction are valid only in unstable cases.
        # Both conditions on zeta and Q0v are applied in case zeta is computed using
        # some other variables than Q0v (thetastar for example).
-       ug = np.where((zeta<0)&(Q0v>0), beta * (g/thetav*h*Q0v)**(1/3), 0)
+       # A Q0v_pos array has to be created as the np.where function calculates values everywhere. Otherwise the uncertainties module would rise math errors for the 1/3 power with negative Q0v values.
+       Q0v_pos = np.where(Q0v>0, Q0v, np.nan)
+       ug = np.where((zeta<0)&(Q0v>0), beta * (g/thetav*h*Q0v_pos)**(1/3), 0)
        ucor = unp.sqrt(u**2+ug**2)
      else:
        sys.exit('With option method = \'godfreybeljaars\', input u, thetav, h and Q0v are required.')
@@ -496,7 +498,8 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
    elif method == 'fairall':
      if u is not None and T is not None and h is not None and Q0 is not None  and E0 is not None:
        Q0v = Q0+0.61*T*E0
-       ug = np.where((zeta<0)&(Q0v>0), beta * (g/T*h*Q0v)**(1/3), 0.)
+       Q0v_pos = np.where(Q0v>0, Q0v, np.nan)
+       ug = np.where((zeta<0)&(Q0v>0), beta * (g/T*h*Q0v_pos)**(1/3), 0.)
        ucor = unp.sqrt(u**2+ug**2)
      else:
        sys.exit('With option method = \'fairall\', input u, T, h, Q0 and E0 are required.')
