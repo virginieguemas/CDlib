@@ -62,6 +62,7 @@ def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
    if z0 is not None and z is not None:
      z0 = np.where(unp.nominal_values(z0)<=0,np.nan,z0)
      z0 = np.where(unp.nominal_values(z0)==np.inf,np.nan,z0)
+     z = np.where(unp.nominal_values(z)<=unp.nomimal(z0),np.nan,z)
      #
      CDn = (k/unp.log(z/z0))**2
    elif u is not None and ustar is not None and f is not None:
@@ -111,6 +112,8 @@ def CSN(deltas=None, u=None, sstar=None, ustar=None, f=None, zs=None, z0=None, z
      zs = np.where(unp.nominal_values(zs)==np.inf,np.nan,zs)
      z0 = np.where(unp.nominal_values(z0)<=0,np.nan,z0)
      z0 = np.where(unp.nominal_values(z0)==np.inf,np.nan,z0)
+     z = np.where(unp.nominal_values(z)<=unp.nomimal(z0),np.nan,z)
+     z = np.where(unp.nominal_values(z)<=unp.nomimal(zs),np.nan,z)
      CSn = k**2/(unp.log(z/zs)*unp.log(z/z0))
    elif ustar is not None and sstar is not None and u is not None and deltas is not None and f is not None: 
      CS = -(ustar*sstar)/(u*deltas)
@@ -180,6 +183,8 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
 
    if method == 'CN': 
      if CDN is not None and z is not None:
+       CDN = np.where(unp.nominal_values(CDN)==0,np.nan,CDN)
+       CDN = np.where(unp.nominal_values(CDN)==np.inf,np.nan,CDN)
        z0 = z/unp.exp(unp.sqrt(k**2/CDN))
      else: 
        sys.exit('With option method = \'CN\', input CDN and z are required.')
@@ -226,6 +231,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      # is used for hs.
      if u is not None and ustar is not None and T is not None:
        ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
+       u = np.where(unp.nominal_values(u)==0,np.nan,u)
        u10n = u
        err = 10
        while err>0.01:
@@ -245,6 +251,7 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      # What appears in SURFEX documentation is not exactly the same : u is used instead of U10n
      if u is not None and ustar is not None and T is not None:
        ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
+       u = np.where(unp.nominal_values(u)==0,np.nan,u)
        u10n = u
        err = 10
        while err>0.01:
@@ -327,6 +334,11 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
 
    if method == 'CN': 
      if CSN is not None and z0 is not None and z is not None:
+       z0 = np.where(unp.nominal_values(z0)<=0,np.nan,z0)
+       z0 = np.where(unp.nominal_values(z0)==np.inf,np.nan,z0)
+       z = np.where(unp.nominal_values(z)<=unp.nomimal(z0),np.nan,z)
+       CSN = np.where(unp.nominal_values(CSN)<=0,np.nan,CSN)
+       CSN = np.where(unp.nominal_values(CSN)==np.inf,np.nan,CSN)
        zs = z/unp.exp(k**2/(unp.log(z/z0)*CSN))
      else: 
        sys.exit('With option method = \'CN\', input CSN, z0 and z are required.')
@@ -334,6 +346,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    ###################################
    elif method == 'obs':
      if z is not None and deltas is not None and sstar is not None and psi is not None: 
+       sstar = np.where(unp.nominal_values(sstar)==0,np.nan,sstar)
        tmp = unp.exp(deltas/sstar*k + psi)
        tmp = np.where(unp.nominal_values(tmp)==0,np.nan,tmp)
        zs = z/tmp
@@ -362,6 +375,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    ###################################
    elif method == 'andreas': 
      if rstar is not None and z0 is not None:
+       rstar = np.where(unp.nominal_values(rstar)<=0,np.nan,rstar)
        if s == 'T':
          b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.25, np.where(rstar<2.5, 0.149, 0.317)))
          b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.55, -0.565)))
