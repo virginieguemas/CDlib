@@ -452,6 +452,9 @@ def U(z, ustar, z0, psi=0) :
    Modified : January 2021  - Sebastien Blein - Uncertainty propagation
    """
 
+   z0 = np.where(unp.nominal_values(z0)<=0,np.nan,z0)
+   z0 = np.where(unp.nominal_values(z0)==np.inf,np.nan,z0)
+   z = np.where(unp.nominal_values(z)<unp.nomimal(z0),np.nan,z)
    u = ustar/k * (unp.log(z/z0) - psi)
 
    return u
@@ -537,6 +540,7 @@ def S(z, s0, sstar, zs, psi=0) :
 
    zs = np.where(unp.nominal_values(zs)<=0,np.nan,zs)
    zs = np.where(unp.nominal_values(zs)==np.inf,np.nan,zs)
+   z = np.where(unp.nominal_values(z)<unp.nominal.values(zs),np.nan,z)
    s = s0 + sstar/k * (unp.log(z/zs) - psi)
 
    return s
@@ -618,7 +622,8 @@ def RB(thetav, Dthetav, u, v, z) :
    
    meteolib.check_T(thetav)
  
-   Rb = g/thetav * Dthetav*z/(u**2+v**2)
+   wspd = np.where(unp.nominal_values(u**2+v**2)==0,np.nan,u**2+v**2)
+   Rb = g/thetav * Dthetav*z/wspd
 
    return Rb
 ################################################################################
@@ -693,8 +698,10 @@ def HSR(R, T, Ts, deltaq, P, lda=1, mu=1) :
 
    alpha = (1 + Lv/cp * dv/dh* dq) # wet-bulb factor
 
+   deltaq = np.where(unp.nominal_values(deltaq)==0,np.nan,deltaq)
    B = mu*(cp/Lv)*deltaT/deltaq # Bowen ratio
            
+   B = np.where(unp.nominal_values(B)==0,np.nan,B)
    Hsrain = - R*cpw*alpha*(1+1/B)*deltaT
   
    return Hsrain
@@ -875,7 +882,8 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
      z0 = np.where(unp.nominal_values(z0)==0,np.nan,z0)
      c2 = c1*alpha*CDN*(z/z0)**0.5
 
-     fstab = (1+c1/2*Rb)**(-2)
+     tmp = np.where(unp.nominal_values(1+c1/2*Rb)==0,np.nan,1+c1/2*Rb)
+     fstab = 1/unp.sqrt(tmp)
 
    elif author == 'LupkesGryanik' :
      if var == 'momentum' :
@@ -890,12 +898,15 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
      z0 = np.where(unp.nominal_values(z0)==0,np.nan,z0)
      c2 = c1*alpha*CDN*(z/z0+1)**0.5
 
-     fstab = (1+10*Rb/unp.sqrt(Rb+1))**(-1)
+     Rb = np.where(unp.nominal_values(Rb)==-1,np.nan,Rb)
+     tmp = np.where(unp.nominal_values(1+10*Rb/unp.sqrt(Rb+1))==0,np.nan,1+10*Rb/unp.sqrt(Rb+1))
+     fstab = 1/tmp
 
    else:
      sys.exit('Only Louis and LupkesGryanik version are coded for now')
 
-   f = np.where(Rb < 0, 1 - (c1*Rb)/(1+c2*np.abs(Rb)**0.5), fstab)
+   dunstab = np.where(unp.nominal_values(1+c2*np.abs(Rb)**0.5)==0,np.nan,1+c2*np.abs(Rb)**0.5)
+   f = np.where(Rb < 0, 1 - (c1*Rb)/dunstab, fstab)
 
    return f
 ################################################################################
