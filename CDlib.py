@@ -540,7 +540,7 @@ def S(z, s0, sstar, zs, psi=0) :
 
    zs = np.where(unp.nominal_values(zs)<=0,np.nan,zs)
    zs = np.where(unp.nominal_values(zs)==np.inf,np.nan,zs)
-   z = np.where(unp.nominal_values(z)<unp.nominal.values(zs),np.nan,z)
+   z = np.where(unp.nominal_values(z)<unp.nominal_values(zs),np.nan,z)
    s = s0 + sstar/k * (unp.log(z/zs) - psi)
 
    return s
