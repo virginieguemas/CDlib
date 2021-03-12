@@ -972,8 +972,8 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      # Roughness Reynolds number depends on friction velocity and aerodynamic roughness
      rstar = Rstar(ustar = ustar, z0 = z0, T = T)
      # Scalar roughness depend on Roughness Reynolds number and friction velocity
-     z0T = ZS(method = zsmod[method], T = T, rstar = rstar, ustar = ustar, z0 = z0, s='T')
-     z0q = ZS(method = zsmod[method], T = T, rstar = rstar, ustar = ustar, z0 = z0, s='Q')
+     z0T = ZS(method = zsmod[method], T = T, rstar = rstar, ustar = ustar, s='T')
+     z0q = ZS(method = zsmod[method], T = T, rstar = rstar, ustar = ustar, s='Q')
      # Neutral transfer coefficients depend on roughness lengths
      Cdn = CDN (z0 = z0, z = z)
      Chn = CSN (zs = z0T, z0 = z0, z = z) 
