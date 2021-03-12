@@ -297,13 +297,11 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    - s = 'T'/'Q' for heat/humidity (parameters b0, b1 and b2 differ).
    With option method = 'brutsaertgarratt' (Garratt, 1992 inspired from Brutsaert 1975 model),
    the function needs: 
-   - the temperature T (in Kelvin),
-   - the friction velocity ustar (in m/s).   
+   - the roughness Reynolds number rstar,
    - the aerodynamic roughness length z0 (in m),
    With option method = 'revisedbrutsaertgarratt' (updated coefficients as proposed in Fairall, 2003),
    the function needs: 
-   - the temperature T (in Kelvin),
-   - the friction velocity ustar (in m/s).   
+   - the roughness Reynolds number rstar,
    - the aerodynamic roughness length z0 (in m),
    With option method = 'simplebrutsaert' (simplified Brutsaert 1982 model used in several bulk algorithms presented in Fairall 2003),
    the function needs:
@@ -320,9 +318,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    - s = 'T'/'Q' for heat/humidity (parameter r differ).
    With option method = 'coare3.0' (Fairall et al, 2003),
    the function needs:
-   - the temperature T (in Kelvin),
-   - the friction velocity ustar (in m/s).   
-   - the aerodynamic roughness length z0 (in m),
+   - the roughness Reynolds number rstar.
 
    Author : Virginie Guemas - October 2020 
    Modified : December 2020 - Virginie Guemas - Option LKB (Liu et al, 1979) used in COARE2.5 (Fairall et al 1996)
@@ -392,19 +388,17 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
 
    ##################################
    elif method == 'brutsaertgarratt':
-     if ustar is not None and z0 is not None and T is not None:
-       Rr = ustar*z0/meteolib.NU(T)
-       zs = z0*unp.exp(2-2.28*Rr**0.25)
+     if rstar is not None and z0 is not None:
+       zs = z0*unp.exp(2-2.28*rstar**0.25)
      else:
-       sys.exit('With option method = \'brutsaertgarratt\', input ustar, z0 and T are required.')
+       sys.exit('With option method = \'brutsaertgarratt\', input rstar and z0 are required.')
 
    ##################################
    elif method == 'revisedbrutsaertgarratt':
-     if ustar is not None and z0 is not None and T is not None:
-       Rr = ustar*z0/meteolib.NU(T)
-       zs = z0*unp.exp(3.4-3.5*Rr**0.25)
+     if rstar is not None and z0 is not None:
+       zs = z0*unp.exp(3.4-3.5*rstar**0.25)
      else:
-       sys.exit('With option method = \'revisedbrutsaertgarratt\', input ustar, z0 and T are required.')
+       sys.exit('With option method = \'revisedbrutsaertgarratt\', input rstar and z0 are required.')
 
    ##################################
    elif method == 'simplebrutsaert':
@@ -439,12 +433,11 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
 
    ##################################
    elif method == 'coare3.0':
-     if ustar is not None and z0 is not None and T is not None:
-       Rr = ustar*z0/meteolib.NU(T)
-       zs = 0.000055*Rr**(-0.6)
+     if rstar is not None:
+       zs = 0.000055*rstar**(-0.6)
        zs = np.where(zs<0.0001,0.0001,zs)
      else:
-       sys.exit('With option method = \'coare3.0\', input ustar, z0 and T are required.')
+       sys.exit('With option method = \'coare3.0\', input rstar is required.')
 
    else:
      sys.exit('Valid methods are \'CN\', \'obs\', \'LKB\', \'andreas\',\'brutsaertgarratt\',\'revisedbrutsaertgarratt\',\'simplebrutsaert\',\'mondonredelsperger\',\'coare3.0\'.')
