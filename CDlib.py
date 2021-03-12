@@ -62,7 +62,7 @@ def CDN(u=None, ustar=None, f=None, z0=None, z=None) :
    if z0 is not None and z is not None:
      z0 = np.where(unp.nominal_values(z0)<=0,np.nan,z0)
      z0 = np.where(unp.nominal_values(z0)==np.inf,np.nan,z0)
-     z = np.where(unp.nominal_values(z)<=unp.nomimal_values(z0),np.nan,z)
+     z = np.where(unp.nominal_values(z)<=unp.nominal_values(z0),np.nan,z)
      #
      CDn = (k/unp.log(z/z0))**2
    elif u is not None and ustar is not None and f is not None:
