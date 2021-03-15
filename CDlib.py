@@ -622,8 +622,8 @@ def RB(thetav, Dthetav, u, v, z) :
    
    meteolib.check_T(thetav)
  
-   wspd = np.where(unp.nominal_values(u**2+v**2)==0,np.nan,u**2+v**2)
-   Rb = g/thetav * Dthetav*z/wspd
+   wspd2 = np.where(unp.nominal_values(u**2+v**2)==0,np.nan,u**2+v**2)
+   Rb = g/thetav * Dthetav*z/wspd2
 
    return Rb
 ################################################################################
