@@ -886,7 +886,7 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
      c2 = c1*alpha*CDN*(z/z0)**0.5
 
      tmp = np.where(unp.nominal_values(1+c1/2*Rb)==0,np.nan,1+c1/2*Rb)
-     fstab = 1/unp.sqrt(tmp)
+     fstab = 1/tmp**2
 
    elif author == 'LupkesGryanik' :
      if var == 'momentum' :
