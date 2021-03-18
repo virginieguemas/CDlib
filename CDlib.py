@@ -21,6 +21,7 @@
 #                    - WEBB         -  Webb correction to latent heat flux
 #                    - HSR          -  Sensible heat flux due to rain
 #                    - TAUR         -  Wind stress due to rain
+#                    - ZETA         -  Stability parameter
 #                    - PSI          -  Stability correction (additive)
 #                    - F            -  Stability correction as a ratio CD/CDN
 #                    - BULK         -  Bulk algorithms for turbulent fluxes
