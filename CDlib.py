@@ -193,30 +193,12 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    elif method == 'obs':
      if u is not None and ustar is not None and psi is not None and z is not None:
        ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
-       #u = np.where(unp.nominal_values(u/ustar*k + psi)<=-1E3,np.nan,u)
-       #u = np.where(unp.nominal_values(u/ustar*k + psi)>=1E3,np.nan,u)
-       #
 
-       for l in np.arange(np.shape(u)[1]):
-         for t in np.arange(np.shape(u)[0]):
-       #for l in [0]:
-       #  for t in [4122]:
-             print('level '+str(l)+': time ind '+str(t))
-             print(u[t,l])
-             print(ustar[t,l])
-             print(psi[t,l])
-             print(z[t,l])
-             print(u[t,l]/ustar[t,l]*k + psi[t,l])
-             print(unp.exp(u[t,l]/ustar[t,l]*k + psi[t,l]))
-             #print(unp.std_devs(unp.exp(u[t,l]/ustar[t,l]*k + psi[t,l])))
-             #print(z[t,l]/unp.exp(u[t,l]/ustar[t,l]*k + psi[t,l]))
        temp = u/ustar*k + psi
+       temp = np.where(unp.nominal_values(temp)>3.e+2,np.nan,temp)
+       temp = np.where(unp.nominal_values(temp)<-3.e+2,np.nan,temp)
 
-
-       exp = unp.exp(u/ustar*k + psi)
-       exp = np.where(unp.nominal_values(exp)<=1.e-150,np.nan,exp)
-       #exp = np.where(unp.nominal_values(exp)>=1.e+150,np.nan,exp)
-       z0 = z/exp
+       z0 = z/unp.exp(temp)
      else: 
        sys.exit('With option method = \'obs\', input z, u, ustar and psi are required.')
 
@@ -755,10 +737,6 @@ def ZETA(z,Lmo) :
 
    Lmo = np.where(unp.nominal_values(Lmo)==0,np.nan,Lmo)
    zeta = z/Lmo
-   print('#################')
-   print(z[4158,0])
-   print(Lmo[4158,0])
-   print(zeta[4158,0])
 
    return zeta
 ################################################################################
