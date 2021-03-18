@@ -638,7 +638,6 @@ def Rstar(ustar, z0, T) :
 
    z0 = np.where(unp.nominal_values(z0)<=0,np.nan,z0)
    z0 = np.where(unp.nominal_values(z0)==np.inf,np.nan,z0)
-   z0 = np.where(unp.nominal_values(z0)>10,np.nan,z0)
    Rs = ustar*z0/meteolib.NU(T)
 
    return Rs
