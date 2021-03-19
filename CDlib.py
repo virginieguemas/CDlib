@@ -193,12 +193,11 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    elif method == 'obs':
      if u is not None and ustar is not None and psi is not None and z is not None:
        ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
+       tmp = u/ustar*k + psi
+       tmp = np.where(unp.nominal_values(tmp)>3.e+2,np.nan,tmp)
+       tmp = np.where(unp.nominal_values(tmp)<-3.e+2,np.nan,tmp)
 
-       temp = u/ustar*k + psi
-       temp = np.where(unp.nominal_values(temp)>3.e+2,np.nan,temp)
-       temp = np.where(unp.nominal_values(temp)<-3.e+2,np.nan,temp)
-
-       z0 = z/unp.exp(temp)
+       z0 = z/unp.exp(tmp)
      else: 
        sys.exit('With option method = \'obs\', input z, u, ustar and psi are required.')
 
