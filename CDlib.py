@@ -987,7 +987,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    while count < ncount[method]:
      # Monin-Obukhov length depends on turbulent fluxes
      lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
-     zeta = ZETA(z, lmo)
+     zeta = np.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
      # Aerodynamic roughness depends on friction velocity
      z0 = Z0(method = method, alpha=0.011, u = u, ustar = ustar, T = T)
      # Roughness Reynolds number depends on friction velocity and aerodynamic roughness
