@@ -496,10 +496,10 @@ def UG(method=None, u=None, h=None, Q0v=None, thetav=None, Q0=None, E0=None, T=N
    
    if method == 'godfreybeljaars':
      if u is not None and thetav is not None and h is not None and Q0v is not None:
-       # Both 'godfreybeljaars' and 'fairall' methods to estimate the wind gustiness
-       # correction are valid only in unstable cases.
-       # Both conditions on zeta and Q0v are applied in case zeta is computed using
-       # some other variables than Q0v (thetastar for example).
+       # Both 'godfreybeljaars' and 'fairall' methods to estimate the wind
+       # gustiness correction are valid only in unstable cases.
+       # Both conditions on zeta and Q0v are applied in case zeta is computed
+       # using some other variables than Q0v (thetastar for example).
        # A Q0v_pos array has to be created as the np.where function calculates values everywhere. Otherwise the uncertainties module would rise math errors for the 1/3 power with negative Q0v values.
        Q0v_pos = np.where(Q0v>0, Q0v, np.nan)
        ug = np.where((zeta<0)&(Q0v>0), beta * (g/thetav*h*Q0v_pos)**(1/3), 0)
@@ -617,7 +617,7 @@ def LMOapprox(ustar, T, thetastar=None, qstar=None, Q0=None, E0=None) :
 ################################################################################
 def RB(thetav, Dthetav, u, v, z) :
    """
-   This function computes the Bulk Richardson number as a function of the vitual potential temperature thetav (in Kelvin) and wind speed horizontal components u and v (in m/s) at height z (in m) and the difference in virtual potential temperature between the height z and the surface Dthetav (in Kelvin).
+   This function computes the Bulk Richardson number as a function of the virtual potential temperature thetav (in Kelvin) and wind speed horizontal components u and v (in m/s) at height z (in m) and the difference in virtual potential temperature between the height z and the surface Dthetav (in Kelvin).
 
    Author : Virginie Guemas - October 2020 
    """
@@ -700,7 +700,7 @@ def HSR(R, T, Ts, deltaq, P, lda=1, mu=1) :
 
    dq = lda * Lv*qsat/(Rv*T**2) # Clausius-Clapeyron relation
 
-   alpha = (1 + Lv/cp * dv/dh* dq) # wet-bulb factor
+   alpha = 1/(1 + Lv/cp * dv/dh* dq) # wet-bulb factor
 
    deltaq = np.where(unp.nominal_values(deltaq)==0,np.nan,deltaq)
    B = mu*(cp/Lv)*deltaT/deltaq # Bowen ratio
@@ -930,7 +930,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    - the potential temperature at height z (in Kelvin),
    - the potential temperature at the surface (in Kelvin),
    - the specific humidity at height z (in kg.kg-1),
-   - the specific humidity at the surface (in kg.kg-1)
+   - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea
    - the layer-averaged temperature T (in Kelvin).
 
    Warning: The Webb correction for latent heat flux, the precipitation correction for
@@ -1017,6 +1017,8 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    # Webb correction, precipitation correction and warm-layer corrections should be included when getting out of the loop 
    # I prefer leaving them out of the function for now.
 
+   #ustar = ustar * u/Ucor # ustart = Cd*S^2 is used throughout the iterative algorithm
+                          # but ustar = Cd*S*u is needed to obtain the momentum flux
 
    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
