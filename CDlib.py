@@ -675,11 +675,12 @@ def WEBB(E0,Q0,q,T) :
 
    return E0cor
 ################################################################################
-def HSR(R, T, Ts, deltaq, P, lda=1, mu=1) :
+def HSR(R, T, Ts, deltaq, P, lda=1, mu=dh/dv) :
    """
-   Precipitation transfer heat to the ocean which should be accounted for in the sensible
-   heat flux term. This function estimates the correction which should be added to 
-   sensible heat flux according to Gosnell et al (1995) as used in Fairall et al (1996).
+   Precipitation transfers heat to the ocean which should be accounted for in the sensible
+   heat flux term. This function estimates the correction for liquid precipitation which 
+   should be added to sensible heat flux toward the ocean according to Gosnell et al (1995) 
+   as used in Fairall et al (1996).
    This function needs :
    - the rain rate R (kg.s-1.m-2),
    - the rain (supposed equal to atmospheric) temperature T (in Kelvin),
@@ -687,12 +688,15 @@ def HSR(R, T, Ts, deltaq, P, lda=1, mu=1) :
    - the difference in specific humidity between atmosphere and surface deltaq (in kg.kg-1),
    - the pressure (in hPa),
    - the lambda parameter lda set to 1 for COARE, Rv/Ra for ECUME and 1 for ECUME6,
-   - the mu parameter set to 1 for COARE, dh/dv for ECUME and ECUME6.
+   - the mu parameter set to 1 for COARE, dh/dv for ECUME and ECUME6. dh/dv seems to be the
+   correct according to Gosnell et al (1995) derivation but the last line includes an error
+   which was repeated in COARE. The default here is dh/dv which can be overcritten by setting
+   mu = 1.
 
    Author : Virginie Guemas - January 2021
    """
    
-   deltaT = T-Ts  # Difference between atmosphere/rain temperature and surface one
+   deltaT = Ts-T  # Difference between atmosphere/rain temperature and surface one
 
    Lv = meteolib.LV(T) # Latent heat of vaporization of rain
 
@@ -702,7 +706,7 @@ def HSR(R, T, Ts, deltaq, P, lda=1, mu=1) :
 
    alpha = 1/(1 + Lv/cp * dv/dh* dq) # wet-bulb factor
 
-   deltaq = np.where(unp.nominal_values(deltaq)==0,np.nan,deltaq)
+   deltaq = np.where(unp.nominal_values(deltaq)==0,np.nan,-deltaq)
    B = mu*(cp/Lv)*deltaT/deltaq # Bowen ratio
            
    B = np.where(unp.nominal_values(B)==0,np.nan,B)
@@ -715,7 +719,7 @@ def TAUR(u, R, gamma=0.85) :
    Rainfall tends to increase surface drag. This functions computes the correction
    to be added to surface wind stress according to Fairall et al (1996) as a 
    function of :
-   - the wind speed u (in m.s-1)
+   - the wind speed u at 10m (in m.s-1)
    - the precipitation rate (in kg.m-2.s-1),
    - the gamma parameter set to 0.85 in COARE and ECUME6, 1 in ECUME.
 
