@@ -141,7 +141,7 @@ def CS (CDN, CSN, psiM, psiH) :
 
    return Cs
 ################################################################################
-def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None) :
+def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alpha=None, F=None) :
    """
    This function returns the aerodynamic roughness length (in m).
    With option method = 'CN', (correspondance between neutral exchange coefficient and roughness length),
@@ -174,12 +174,20 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
    - the 10m horizontal wind speed u (in m/s),
    - the friction velocity ustar (in m/s),
    - the temperature T (in Kelvin).
+   With option method='andreas05' (Andreas et al, 2005),
+   - the friction velocity ustar (in m/s),
+   - the temperature T (in Kelvin).
+   - the factor F before the exponential (5 in Andreas et al (2005), 1 in Andreas et al (2004))
+   With option method='andreas10' (Andreas et al, 2010),
+   - the friction velocity ustar (in m/s),
+   - the temperature T (in Kelvin).
 
    Author : Virginie Guemas - October 2020 
    Modified : December 2020 - Virginie Guemas - Option Smith (1988) formula used in COARE 2.5 (Fairall, 1996)
                                                 Option COARE 3.0 (Fairall et al 2003)
                                                 Options Taylor and Yelland (2001) and Oost et al (2002)
               January 2021  - Sebastien Blein - Uncertainty propagation
+              April 2022    - Virginie Guemas - Option Andreas et al (2005), Andreas et al (2010)
    """
 
    if method == 'CN': 
@@ -267,8 +275,24 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      else:    
        sys.exit('With option method = \'oost\', input u, ustar and T are required') 
 
+   ##################################
+   elif method == 'andreas05':
+     if ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
+       z0 = 0.135*meteolib.NU(T)/ustar + 0.035*ustar**2/g*(F*unp.exp(-((ustar-0.18)/0.1)**2)+1)
+     else:
+       sys.exit('With option method = \'andreas05\', input ustar and T are required')
+
+   ##################################
+   elif method == 'andreas10':
+     if ustar is not None and T is not None:
+       ustar = np.where(unp.nominal_values(ustar)==0,np.nan,ustar)
+       z0 = 0.135*meteolib.NU(T)/ustar + 0.00023*unp.tanh(13*ustar)**3
+     else:
+       sys.exit('With option method = \'andreas10\', input ustar and T are required')
+
    else:
-     sys.exit('Valid methods are \'CN\', \'obs\', \'coare2.5\', \'coare3.0\',\'tayloryelland\',\'oost\'.')
+     sys.exit('Valid methods are \'CN\', \'obs\', \'coare2.5\', \'coare3.0\',\'tayloryelland\',\'oost\',\'andreasà5\',\'andreas10\'.')
 
    return z0
 ################################################################################
