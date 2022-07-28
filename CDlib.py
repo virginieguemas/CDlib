@@ -983,7 +983,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    # I could not find the first guess of neutral bulk transfer coefficients in Fairall et al (1996, 2003).
    # Those choices are the default one over sea ice in CNRM-CM6.
 
-   if method == 'coare2.5':
+   if method == 'coare2.5' or 'seaice':
      # First guess of bulk transfer coefficients is neutral bulk transfer coefficients
      cd = cdn
      ch = chn
@@ -1001,7 +1001,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      ce = CS (CDN = cdn, CSN = cen, psiM = psiM, psiH = psiH)
 
    else:
-      sys.exit('Only coare2.5 and coare3.0 are coded for now')
+      sys.exit('Only coare2.5, coare3.0 and seaice are coded for now')
 
    # First guess of bulk turbulent fluxes
    ustar = unp.sqrt(cd * Ucor**2)
@@ -1009,10 +1009,11 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    qstar = ce/unp.sqrt(cd) * deltaq
 
    # A few choices of methods used in the various COARE algorithms
-   zsmod = {'coare2.5':'LKB','coare3.0':'coare3.0'}
-   psiunstab = {'coare2.5':'fairall1996','coare3.0':'grachev2000'}
-   psistab = {'coare2.5':'dyer-hicks','coare3.0':'beljaars-holtslag'}
-   ncount = {'coare2.5':20,'coare3.0':10}
+   z0mod = {'coare2.5':'coare2.5','coare3.0':'coare3.0','seaice':'andreas10'}
+   zsmod = {'coare2.5':'LKB','coare3.0':'coare3.0','seaice':'andreas'}
+   psiunstab = {'coare2.5':'fairall1996','coare3.0':'grachev2000','seaice':'grachev2000'}
+   psistab = {'coare2.5':'dyer-hicks','coare3.0':'beljaars-holtslag','seaice':'grachev'}
+   ncount = {'coare2.5':20,'coare3.0':10,'seaice':20}
 
    # Iterations
    count = 0 
@@ -1021,12 +1022,12 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
      zeta = np.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
      # Aerodynamic roughness depends on friction velocity
-     z0 = Z0(method = method, alpha=0.011, u = u, ustar = ustar, T = T)
+     z0 = Z0(method = z0mod[method], alpha=0.011, u = u, ustar = ustar, T = T)
      # Roughness Reynolds number depends on friction velocity and aerodynamic roughness
      rstar = Rstar(ustar = ustar, z0 = z0, T = T)
      # Scalar roughness depend on Roughness Reynolds number and friction velocity
-     z0T = ZS(method = zsmod[method], T = T, rstar = rstar, ustar = ustar, s='T')
-     z0q = ZS(method = zsmod[method], T = T, rstar = rstar, ustar = ustar, s='Q')
+     z0T = ZS(method = zsmod[method], z0 = z0, T = T, rstar = rstar, ustar = ustar, s='T')
+     z0q = ZS(method = zsmod[method], z0 = z0, T = T, rstar = rstar, ustar = ustar, s='Q')
      # Neutral transfer coefficients depend on roughness lengths
      Cdn = CDN (z0 = z0, z = z)
      Chn = CSN (zs = z0T, z0 = z0, z = z) 
@@ -1044,12 +1045,14 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      qstar = Ce/unp.sqrt(Cd) * deltaq
      # Update corrected wind speed for gustiness
      Ucor = np.where(zeta<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25, zeta = zeta), u)
+     if method == 'seaice':
+       Ucor = np.where(zeta>0, UG(method='jordan', u = u, zeta = zeta), Ucor)
      # Cool-skin is not implemented
      count = count + 1
    # Webb correction, precipitation correction and warm-layer corrections should be included when getting out of the loop 
    # I prefer leaving them out of the function for now.
 
-   #ustar = ustar * u/Ucor # ustart = Cd*S^2 is used throughout the iterative algorithm
+   #ustar = ustar * u/Ucor # ustar = Cd*S^2 is used throughout the iterative algorithm
                           # but ustar = Cd*S*u is needed to obtain the momentum flux
 
    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
