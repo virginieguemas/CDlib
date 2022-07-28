@@ -952,7 +952,9 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    """
    This function applies one of the COARE or ECUME algorithms to estimate bulk
    turbulent fluxes of velocity, heat and humidity as well as the associated transfer 
-   coefficients. It needs :
+   coefficients above ocean. It can also use a combination of the most recent parametrizations
+   of scalar and aerodynamic roughness and stability function over sea ice to estimate
+   those bulk turbulent fluxes and transfer coefficients over sea ice. It needs :
    - the atmospheric measurement height z (in m),
    - the wind speed at height z (in m.s-1),
    - the potential temperature at height z (in Kelvin),
@@ -960,13 +962,15 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    - the specific humidity at height z (in kg.kg-1),
    - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea
    - the layer-averaged temperature T (in Kelvin).
+   - the method : 'coare2.5', 'coare3.0' or 'seaice'. Default : 'coare2.5'.
 
    Warning: The Webb correction for latent heat flux, the precipitation correction for
-   sensible heat flux, the warm-layer and cool-skin corrections for surface temperature
-   are not included.
+   sensible heat flux, the warm-layer and cool-skin corrections over ocean for surface 
+   temperature are not included.
 
    Author : Virginie Guemas - January 2021  
    Modified : January 2021  - Sebastien Blein - Uncertainty propagation
+              July 2022     - Virginie Guemas - Fluxes and coefficients above sea ice
    """
    deltatheta = theta - thetas
    deltaq = q - qs
@@ -974,10 +978,10 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    # First guess of wind gustiness correction and neutral bulk transfer coefficients
    Ucor = unp.sqrt(u**2+0.5**2)
    cdn = 0.0015
-   chn = 0.001
-   cen = 0.001
+   chn = 0.0015
+   cen = 0.0015
    # I could not find the first guess of neutral bulk transfer coefficients in Fairall et al (1996, 2003).
-   # Those choices are arbitrary.
+   # Those choices are the default one over sea ice in CNRM-CM6.
 
    if method == 'coare2.5':
      # First guess of bulk transfer coefficients is neutral bulk transfer coefficients
