@@ -1057,3 +1057,70 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
 
    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
+def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, method='lupkes12') :
+    """
+    This function estimates the form drag contribution to the turbulent fluxes above a mixed 
+    surface of ocean and sea ice. It needs :
+   - the sea ice concentration Ci,
+   - the friction velocity above the ocean ustarO (in m.s-1), 
+   - the friction velocity above the ice ustarI (in m.s-1), 
+   - the temperature scaling parameter above the ocean thetastarO (in Kelvin),
+   - the temperature scaling parameter above the ice thetastarI (in Kelvin),
+   - the humidity scaling parameter above the ocean qstarO (in kg.kg-1),
+   - the humidity scaling parameter above the ice qstarI (in kg.kg-1),
+   - the atmospheric measurement height z (in m),
+   - the wind speed at height z (in m.s-1),
+   - the potential temperature at height z (in Kelvin),
+   - the potential temperature at the surface (in Kelvin),
+   - the specific humidity at height z (in kg.kg-1),
+   - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea
+   - the layer-averaged temperature T (in Kelvin).
+   - the method : 'lupkes12'.
+
+    Author : Virginie Guemas - July 2021  
+    """
+
+    if method == 'andreas10':
+      #Cdn = 0.001 * (1.5 + 2.233*Ci - 2.233*Ci**2)
+      #Chn = 0.
+      #Cen = 0.
+      sys.exit('Not coded yet')
+    elif method == 'lupkes12':
+      Cdn = 3.67*0.001*(1-Ci)*Ci
+      Chn = 0.
+      Cen = 0.
+    else:
+      sys.exit('Not coded yet')
+
+    deltatheta = theta - thetas
+    deltaq = q - qs
+    
+    # Weighted average of momentum, heat and humidity fluxes by the sea ice concentration
+    ustar2 = Ci*ustarI**2 + (1-Ci)*ustarO**2 
+    ustarthetastar = Ci*ustarI*thetastarI + (1-Ci)*ustarO*thetastarO
+    ustarqstar = Ci*ustarI*qstarI + (1-Ci)*ustarO*qstarO
+
+    # Monin-Obukhov length above a mixed ice-ocean surface
+    ustar = unp.sqrt(ustar2)
+    thetastar = np.where(ustar == 0., 0., ustarthetastar/ustar)
+    qstar = np.where(ustar == 0., 0., ustarqstar/ustar)
+    lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
+  
+    # Stability correction depends on Monin-Obukov length
+    zeta = np.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
+    (psiM, psiH) = PSI(zeta, stab = 'grachev', unstab = 'grachev2000')
+
+    # Transfer coefficients depend on neutral transfer coefficients and stability corrections
+    Cd = CD (CDN = Cdn, psi = psiM)
+    Ch = CS (CDN = Cdn, CSN = Chn, psiM = psiM, psiH = psiH)
+    Ce = CS (CDN = Cdn, CSN = Cen, psiM = psiM, psiH = psiH)
+
+    # From-drag related turbulent fluxes
+    ustar = unp.sqrt(Cd * u**2)
+    thetastar = Ch/unp.sqrt(Cd) * deltatheta
+    qstar = Ce/unp.sqrt(Cd) * deltaq
+
+    print(Cdn)
+
+    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
+################################################################################
