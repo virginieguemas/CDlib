@@ -1060,7 +1060,8 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
 def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, method='lupkes12') :
     """
     This function estimates the form drag contribution to the turbulent fluxes above a mixed 
-    surface of ocean and sea ice. It needs :
+    surface of ocean and sea ice and returns the sum of this form drag contribution and the
+    average of contribution over ice and ocean weighted by sea ice concentration. It needs :
    - the sea ice concentration Ci,
    - the friction velocity above the ocean ustarO (in m.s-1), 
    - the friction velocity above the ice ustarI (in m.s-1), 
@@ -1116,11 +1117,15 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
     Ce = CS (CDN = Cdn, CSN = Cen, psiM = psiM, psiH = psiH)
 
     # From-drag related turbulent fluxes
-    ustar = unp.sqrt(Cd * u**2)
-    thetastar = Ch/unp.sqrt(Cd) * deltatheta
-    qstar = Ce/unp.sqrt(Cd) * deltaq
+    #ustar = unp.sqrt(Cd * u**2)
+    #thetastar = Ch/unp.sqrt(Cd) * deltatheta
+    #qstar = Ce/unp.sqrt(Cd) * deltaq
+    #
+    # Adding the form-drag related turbulent fluxes
+    ustar2 = ustar2 + Cd * u**2
+    ustarthetastar = ustarthetastar + Ch * u * deltatheta
+    ustarqstar = ustarqstar + Ce * u * deltaq
 
-    print(Cdn)
-
-    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
+    #return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
+    return {'ustar2':ustar2, 'ustarqstar':ustarqstar, 'ustarthetastar':ustarthetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
