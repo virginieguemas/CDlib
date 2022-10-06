@@ -1057,11 +1057,21 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
 
    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
-def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, method='lupkes12') :
+def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, CDNo=None) :
     """
     This function estimates the form drag contribution to the turbulent fluxes above a mixed 
     surface of ocean and sea ice and returns the sum of this form drag contribution and the
     average of contribution over ice and ocean weighted by sea ice concentration. It needs :
+   - the method : 'andreas10' for Andreas et al (2010), deduced from their total CDN form (eq. 5.2)
+                             by subtracting Ci * the drag over ice (taken to 0.0014 by the end of
+                             section 5) and (1-Ci) * the drag over ocean (taken to 0.0015 by the
+                             end of section 5),  
+                  'lupkesbirnbaum' for Lupkes and Birnbaum (2005), i.e. the simple form obtained
+                                   by fitting a polynom to their complex parameterization,
+                  'lupkes12' for Lupkes et al (2012), where the simplifications which allow to
+                             obtain the same form in the marginal ice zone all year long and 
+                             in the central Arctic in summer are used,
+                  'lupkesgryanik15' for Lupkes and Gryanik (2015)
    - the sea ice concentration Ci,
    - the friction velocity above the ocean ustarO (in m.s-1), 
    - the friction velocity above the ice ustarI (in m.s-1), 
@@ -1074,20 +1084,34 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
    - the potential temperature at height z (in Kelvin),
    - the potential temperature at the surface (in Kelvin),
    - the specific humidity at height z (in kg.kg-1),
-   - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea
-   - the layer-averaged temperature T (in Kelvin).
-   - the method : 'lupkes12'.
+   - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea,
+   - the layer-averaged temperature T (in Kelvin),
+   - the neutral drag coefficient above ocean CDNo, only for method = 'lupkes12'.
 
     Author : Virginie Guemas - July 2021  
     """
 
     if method == 'andreas10':
-      #Cdn = 0.001 * (1.5 + 2.233*Ci - 2.233*Ci**2)
-      #Chn = 0.
-      #Cen = 0.
+      Cdn = 0.001 * 2.333 * Ci * (1 - Ci)
+      Chn = 0.
+      Cen = 0.
       sys.exit('Not coded yet')
+    elif method == 'lupkesbirnbaum05':
+      alpha = 31/(1-Ci)
+      Cdn = 0.0034*Ci**2 * ( (1-Ci)**0.8 + 0.5*(1-0.5*Ci)**2) / (alpha + 90*Ci)
+      Chn = 0.
+      Cen = 0.
     elif method == 'lupkes12':
-      Cdn = 3.67*0.001*(1-Ci)*Ci
+      if CDNo is None:
+        print("Using the default z0 value of 0.000327 for z0 above ocean")
+        z0 = 0.000327
+      else:
+        z0 = Z0(method = 'CN' , CDN = CDNo, z = z)
+      ce = 0.3
+      beta = 1  #  Or 1.1 (ideal for melt ponds)
+      hfc = 0.41 # or 1.2 for melt ponds 
+      Dmin = 8   # or 33/24.63 or melt ponds
+      Cdn = ce/2 * (unp.log(hfc/z0)/unp.log(10/z0))**2 * hfc/Dmin * (1-Ci)**beta * Ci
       Chn = 0.
       Cen = 0.
     else:
