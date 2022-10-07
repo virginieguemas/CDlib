@@ -301,7 +301,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
    This function returns the scalar roughness length (in m) for either heat or humidity.
    With option method = 'CN' (correspondance between neutral exchange coefficients and roughness length), 
    the function needs :
-   - the neutral bulk scalar exchange coefficient CHN (for heat) or CQN (for momentum),
+   - the neutral bulk scalar exchange coefficient CHN (for heat) or CQN (for humidity),
    - the aerodyamic roughness length z0 (in m),
    - the height z (in m).
    With option method = 'obs' (from the relation between the observed scalar profiles and fluxes),
@@ -1057,7 +1057,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
 
    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
-def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, CDNo=None) :
+def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, CDNo=None, CDNi=None, CHNo=None, CHNi=None, CENo=None, CENi=None, ce=0.4, beta=1, hfc=0.41, D=8)
     """
     This function estimates the form drag contribution to the turbulent fluxes above a mixed 
     surface of ocean and sea ice and returns the sum of this form drag contribution and the
@@ -1066,7 +1066,7 @@ def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qst
                              by subtracting Ci * the drag over ice (taken to 0.0014 by the end of
                              section 5) and (1-Ci) * the drag over ocean (taken to 0.0015 by the
                              end of section 5),  
-                  'lupkesbirnbaum' for Lupkes and Birnbaum (2005), i.e. the simple form obtained
+                  'lupkesbirnbaum05' for Lupkes and Birnbaum (2005), i.e. the simple form obtained
                                    by fitting a polynom to their complex parameterization,
                   'lupkes12' for Lupkes et al (2012), where the simplifications which allow to
                              obtain the same form in the marginal ice zone all year long and 
@@ -1086,9 +1086,33 @@ def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qst
    - the specific humidity at height z (in kg.kg-1),
    - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea,
    - the layer-averaged temperature T (in Kelvin),
-   - the neutral drag coefficient above ocean CDNo, only for method = 'lupkes12'.
+   - the neutral skin drag coefficient above ocean CDNo, only for method = 'lupkes12' or 'lupkesgryanik15',
+                 If not provided, an aerodynamic roughness of 3.27x10-4 is used (as in L12),
+   - the neutral skin drag coefficient above ice CDNi, only for method = 'lupkesgryanik15',
+                 If not provided, an aerodynamic roughness of 2.28x10-4 is used (as in L12),
+   - the neutral skin heat transfert coefficient above ocean CHNo, only for method = 'lupkesgryanik15',
+                 If not provided, 1.5x10-3 is used,
+   - the neutral skin heat transfert coefficient above ice CHNi, only for method = 'lupkesgryanik15',
+                 If not provided, 1.5x10-3 is used,
+   - the neutral skin humidity transfert coefficient above ocean CENo, only for method = 'lupkesgryanik15',
+                 If not provided, the same scalar roughness as for heat is used,
+   - the neutral skin humidity transfert coefficient above ice CENi, only for method = 'lupkesgryanik15',
+                 If not provided, the same scalar roughness as for heat is used,
+   - the effective resistence coefficient ce, only for method = 'lupkes12' or 'lupkesgryanik15', 
+                 0.3 is used in L12 while 0.4 is used in LG15. Default : 0.4,
+   - the beta factor, only for method = 'lupkes12' or 'lupkesgryanik15', taken as 1 in the MIZ in L12 and
+                 1.4 in LG15 while taken as 1.1 in the central Arctic in both  L12 and LG15. Default : 1,
+   - the average sea ice thickness above open ocean or melt pond hfc, only for method = 'lupkes12' or 
+                'lupkesgryanik15', taken as 0.41 in the MIZ and 1.2 in the central Arctic in both L12 and 
+                LG15. Default : 0.41, what impacts the parameterization is the hfc/D ratio,
+   - the average diameter of leads or melt ponds D, only for method = 'lupkes12' or 'lupkesgryanik15',
+                taken as 8 in the MIZ and 33 in the central Arctic in both L12 and LG15. Default : 8, what 
+                impacts the parameterization is the hfc/D ratio.
 
-    Author : Virginie Guemas - July 2021  
+    Author : Virginie Guemas - July 2022
+
+    Modified : October 2022 - Virginie Guemas - Added andreas10, lupkesbirnbaum05, lupkesgryanik15 options
+                                              - Amended lupkes12 to account for input CDNo instead of default.
     """
 
     if method == 'andreas10':
@@ -1101,24 +1125,62 @@ def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qst
       Cdn = 0.0034*Ci**2 * ( (1-Ci)**0.8 + 0.5*(1-0.5*Ci)**2) / (alpha + 90*Ci)
       Chn = 0.
       Cen = 0.
-    elif method == 'lupkes12':
+    elif method == 'lupkes12' or method == 'lupkesgryanik15':
       if CDNo is None:
-        print("Using the default z0 value of 0.000327 for z0 above ocean")
-        z0 = 0.000327
+        print("Using the default z0w value of 0.000327 for z0 above ocean")
+        z0w = 0.000327
       else:
-        z0 = Z0(method = 'CN' , CDN = CDNo, z = z)
-      ce = 0.3
-      beta = 1  #  Or 1.1 (ideal for melt ponds)
-      hfc = 0.41 # or 1.2 for melt ponds 
-      Dmin = 8   # or 33/24.63 or melt ponds
-      Cdn = ce/2 * (unp.log(hfc/z0)/unp.log(10/z0))**2 * hfc/Dmin * (1-Ci)**beta * Ci
+        z0w = Z0(method = 'CN' , CDN = CDNo, z = z)
+
+      Cdn = ce/2 * (unp.log(hfc/z0w)/unp.log(10/z0w))**2 * hfc/D * (1-Ci)**beta * Ci
       Chn = 0.
       Cen = 0.
+
+      if method == 'lupkesgryanik15':
+        z0fw = Z0(method = 'CN' , CDN = Cdn, z = z)  
+        if CDNi is None:
+          print("Using the default z0i value of 0.000228 for z0 above ocean")
+          z0i = 0.000228 # ideal value for inner Arctic, 0.000454 would be better for MIZ according to LG15
+        else:
+          z0i = Z0(method = 'CN' , CDN = CDNi, z = z)
+        Cdni = ce/2 * (unp.log(hfc/z0i)/unp.log(10/z0i))**2 * hfc/D * (1-Ci)**beta * Ci
+        z0fi = Z0(method = 'CN' , CDN = Cdni, z = z)
+        Cdn = Cdn * (1-Ci) + Ci * Cdni
+
+        if CHNi is None:
+          zhi = ZS(method = 'CN', CSN = 0.0015, z0 = z0i , z = z)
+        else:
+          zhi = ZS(method = 'CN', CSN = CHNi, z0 = z0i , z = z) 
+        if CHNo is None:
+          zhw = ZS(method = 'CN', CSN = 0.0015, z0 = z0w , z = z)
+        else:
+          zhw = ZS(method = 'CN', CSN = CHNo, z0 = z0w , z = z)
+        zhfi = zhi/z0i*z0fi 
+        zhfw = zhw/z0w*z0fw 
+        Chn = Ci * CSN(zs = zhfi,z0 = z0fi,z = z) + (1-Ci) * CSN(zs = zhfw,z0 = z0fw,z = z)
+
+        if CENi is None:
+          zqi = zhi
+        else:
+          zqi = ZS(method = 'CN', CSN = CENi, z0 = z0i , z = z) 
+        if CENo is None:
+          zqw = zhw
+        else:
+          zqw = ZS(method = 'CN', CSN = CENo, z0 = z0w , z = z) 
+        zqfi = zqi/z0i*z0fi 
+        zqfw = zqw/z0w*z0fw 
+        Cen = Ci * CSN(zs = zqfi,z0 = z0fi,z = z) + (1-Ci) * CSN(zs = zqfw,z0 = z0fw,z = z)
+
     else:
       sys.exit('Not coded yet')
 
     deltatheta = theta - thetas
     deltaq = q - qs
+
+    # LG15 averages the stability correction factor above ice and ocean to correct the
+    # averaged CDn we have just computed.
+    # It makes more physical sense to me to average the turbulent fluxes and compute an 
+    # overall Monin-Obukhov length, zeta and stability correction factor
     
     # Weighted average of momentum, heat and humidity fluxes by the sea ice concentration
     ustar2 = Ci*ustarI**2 + (1-Ci)*ustarO**2 
@@ -1140,16 +1202,10 @@ def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qst
     Ch = CS (CDN = Cdn, CSN = Chn, psiM = psiM, psiH = psiH)
     Ce = CS (CDN = Cdn, CSN = Cen, psiM = psiM, psiH = psiH)
 
-    # From-drag related turbulent fluxes
-    #ustar = unp.sqrt(Cd * u**2)
-    #thetastar = Ch/unp.sqrt(Cd) * deltatheta
-    #qstar = Ce/unp.sqrt(Cd) * deltaq
-    #
     # Adding the form-drag related turbulent fluxes
     ustar2 = ustar2 + Cd * u**2
     ustarthetastar = ustarthetastar + Ch * u * deltatheta
     ustarqstar = ustarqstar + Ce * u * deltaq
 
-    #return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
     return {'ustar2':ustar2, 'ustarqstar':ustarqstar, 'ustarthetastar':ustarthetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
