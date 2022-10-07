@@ -1057,21 +1057,13 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
 
    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
-def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, CDNo=None, CDNi=None, CHNo=None, CHNi=None, CENo=None, CENi=None, ce=0.4, beta=1, hfc=0.41, D=8)
+def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, method='lupkesgryanik15', CDNo=None, CDNi=None, CHNo=None, CHNi=None, CENo=None, CENi=None, ce=0.4, beta=1, hfc=0.41, D=8) :
     """
     This function estimates the form drag contribution to the turbulent fluxes above a mixed 
     surface of ocean and sea ice and returns the sum of this form drag contribution and the
-    average of contribution over ice and ocean weighted by sea ice concentration. It needs :
-   - the method : 'andreas10' for Andreas et al (2010), deduced from their total CDN form (eq. 5.2)
-                             by subtracting Ci * the drag over ice (taken to 0.0014 by the end of
-                             section 5) and (1-Ci) * the drag over ocean (taken to 0.0015 by the
-                             end of section 5),  
-                  'lupkesbirnbaum05' for Lupkes and Birnbaum (2005), i.e. the simple form obtained
-                                   by fitting a polynom to their complex parameterization,
-                  'lupkes12' for Lupkes et al (2012), where the simplifications which allow to
-                             obtain the same form in the marginal ice zone all year long and 
-                             in the central Arctic in summer are used,
-                  'lupkesgryanik15' for Lupkes and Gryanik (2015)
+    average of contribution over ice and ocean weighted by sea ice concentration. It also
+    returns the neutral form-induced drag coefficients and transfer coefficients for heat and
+    humidity. It needs :
    - the sea ice concentration Ci,
    - the friction velocity above the ocean ustarO (in m.s-1), 
    - the friction velocity above the ice ustarI (in m.s-1), 
@@ -1086,6 +1078,16 @@ def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qst
    - the specific humidity at height z (in kg.kg-1),
    - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea,
    - the layer-averaged temperature T (in Kelvin),
+   - the method : 'andreas10' for Andreas et al (2010), deduced from their total CDN form (eq. 5.2)
+                             by subtracting Ci * the drag over ice (taken to 0.0014 by the end of
+                             section 5) and (1-Ci) * the drag over ocean (taken to 0.0015 by the
+                             end of section 5),  
+                  'lupkesbirnbaum05' for Lupkes and Birnbaum (2005), i.e. the simple form obtained
+                                   by fitting a polynom to their complex parameterization,
+                  'lupkes12' for Lupkes et al (2012), where the simplifications which allow to
+                             obtain the same form in the marginal ice zone all year long and 
+                             in the central Arctic in summer are used,
+                  'lupkesgryanik15' for Lupkes and Gryanik (2015)
    - the neutral skin drag coefficient above ocean CDNo, only for method = 'lupkes12' or 'lupkesgryanik15',
                  If not provided, an aerodynamic roughness of 3.27x10-4 is used (as in L12),
    - the neutral skin drag coefficient above ice CDNi, only for method = 'lupkesgryanik15',
@@ -1115,61 +1117,81 @@ def FORMDRAG (method='lupkes12', Ci, ustarO, ustarI, thetastarO, thetastarI, qst
                                               - Amended lupkes12 to account for input CDNo instead of default.
     """
 
+    # What is called Cdn, Chn and Cen in the following are the form-induced neutral coefficients.
+    # CDN, CHN and CEN are the input skin coefficients over ocean or ice only.
     if method == 'andreas10':
-      Cdn = 0.001 * 2.333 * Ci * (1 - Ci)
+      Cdn = 0.001 * 2.333 * Ci * (1 - Ci)  # From Eq (5.2) in Andreas et al (2010)
       Chn = 0.
       Cen = 0.
-      sys.exit('Not coded yet')
     elif method == 'lupkesbirnbaum05':
       alpha = 31/(1-Ci)
       Cdn = 0.0034*Ci**2 * ( (1-Ci)**0.8 + 0.5*(1-0.5*Ci)**2) / (alpha + 90*Ci)
+                                           # Eq (3) in Lupkes et al (2012)
       Chn = 0.
       Cen = 0.
     elif method == 'lupkes12' or method == 'lupkesgryanik15':
       if CDNo is None:
         print("Using the default z0w value of 0.000327 for z0 above ocean")
-        z0w = 0.000327
+        z0w = 0.000327                     # See section 3.1.5 in Lupkes et al (2012)
       else:
         z0w = Z0(method = 'CN' , CDN = CDNo, z = z)
 
       Cdn = ce/2 * (unp.log(hfc/z0w)/unp.log(10/z0w))**2 * hfc/D * (1-Ci)**beta * Ci
+                                           # Eqs (35) and (36) in Lupkes et al (2012)
       Chn = 0.
       Cen = 0.
 
       if method == 'lupkesgryanik15':
         z0fw = Z0(method = 'CN' , CDN = Cdn, z = z)  
+        # Form-induced aerodynamical roughness over water
         if CDNi is None:
           print("Using the default z0i value of 0.000228 for z0 above ocean")
           z0i = 0.000228 # ideal value for inner Arctic, 0.000454 would be better for MIZ according to LG15
         else:
           z0i = Z0(method = 'CN' , CDN = CDNi, z = z)
         Cdni = ce/2 * (unp.log(hfc/z0i)/unp.log(10/z0i))**2 * hfc/D * (1-Ci)**beta * Ci
+        # Eq (21) and (41) in Lupkes and Gryanik (2015)
+        # The e factor does not appear in the logarithm because it is not there in Lupkes et al (2012)
+        # and I am not sure why it appears in Lupkes and Gryanik (2015)
         z0fi = Z0(method = 'CN' , CDN = Cdni, z = z)
+        # Form-induced aerodynamical roughness over ice
         Cdn = Cdn * (1-Ci) + Ci * Cdni
 
         if CHNi is None:
+          print("Using the default value of 0.00015 for neutral skin heat transfer coefficient above ocean")
           zhi = ZS(method = 'CN', CSN = 0.0015, z0 = z0i , z = z)
         else:
           zhi = ZS(method = 'CN', CSN = CHNi, z0 = z0i , z = z) 
+        # Skin scalar roughness above ice for heat
         if CHNo is None:
+          print("Using the default value of 0.00015 for neutral skin heat transfer coefficient above ice")
           zhw = ZS(method = 'CN', CSN = 0.0015, z0 = z0w , z = z)
         else:
           zhw = ZS(method = 'CN', CSN = CHNo, z0 = z0w , z = z)
+        # Skin scalar roughness above water for heat
         zhfi = zhi/z0i*z0fi 
         zhfw = zhw/z0w*z0fw 
+        # Form-induced scalar roughness for heat above ice and water following Eq (59) in LG15
         Chn = Ci * CSN(zs = zhfi,z0 = z0fi,z = z) + (1-Ci) * CSN(zs = zhfw,z0 = z0fw,z = z)
+        # Weighted average of form-induced heat transfer coefficients above ice and water 
 
         if CENi is None:
+          print("Using the same scalar roughness over ice for heat and humidity as default")
           zqi = zhi
         else:
           zqi = ZS(method = 'CN', CSN = CENi, z0 = z0i , z = z) 
+        # Skin scalar roughness above ice for humidity
         if CENo is None:
+          print("Using the same scalar roughness over water for heat and humidity as default")
           zqw = zhw
         else:
           zqw = ZS(method = 'CN', CSN = CENo, z0 = z0w , z = z) 
+        # Skin scalar roughness above water for humidity
         zqfi = zqi/z0i*z0fi 
         zqfw = zqw/z0w*z0fw 
+        # Form-induced scalar roughness for humidity above ice and water following Eq (59) in LG15
         Cen = Ci * CSN(zs = zqfi,z0 = z0fi,z = z) + (1-Ci) * CSN(zs = zqfw,z0 = z0fw,z = z)
+        # Weighted average of form-induced humidity transfer coefficients above ice and water 
 
     else:
       sys.exit('Not coded yet')
