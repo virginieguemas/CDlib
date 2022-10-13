@@ -135,7 +135,10 @@ def CS (CDN, CSN, psiM, psiH) :
    """
   
    if CDN is not None and CSN is not None and psiM is not None and psiH is not None : 
+     mask = np.where(CDN == 0.,True,False)
+     CDN  = np.where(CDN == 0., np.nan, CDN)
      Cs = CSN / ((1-CSN/(k*unp.sqrt(CDN))*psiH)*(1-unp.sqrt(CDN)/k*psiM))
+     Cs = np.where(mask,0.,Cs)
    else:
      sys.exit('CDN, CSN, psiM and psiH are required to compute CH or CE')
 
