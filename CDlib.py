@@ -33,6 +33,7 @@
 #                              with an usage without uncertainties
 ################################################################################
 import numpy as np
+import xarray as xr
 import meteolib
 import sys
 from uncertainties import unumpy as unp
@@ -1007,7 +1008,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      # First guess based on Grachev and Fairall (1997) estimate of stability
      Rb = RB(thetav = T, Dthetav = meteolib.Thetav(theta,q) - meteolib.Thetav(thetas,qs), u = u, v = 0, z = z) 
      # Fairall et al 2003 use T instead of thetav in the estimate of beta = g/thetav
-     Rb = np.where(unp.nominal_values(Rb)==4.5,np.nan,Rb)
+     Rb = xr.where(unp.nominal_values(Rb)==4.5,np.nan,Rb)
      zeta = 10*Rb/(1+Rb/(-4.5))
      (psiM, psiH) = PSI(zeta, gamma = 4.7, stab='beljaars-holtslag', unstab='grachev2000')
      cd = CD (CDN = cdn, psi = psiM)
@@ -1034,7 +1035,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    while count < ncount[method]:
      # Monin-Obukhov length depends on turbulent fluxes
      lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
-     zeta = np.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
+     zeta = xr.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
      # Aerodynamic roughness depends on friction velocity
      z0 = Z0(method = z0mod[method], alpha=0.011, u = u, ustar = ustar, T = T)
      # Roughness Reynolds number depends on friction velocity and aerodynamic roughness
@@ -1058,9 +1059,9 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      thetastar = Ch/unp.sqrt(Cd) * deltatheta
      qstar = Ce/unp.sqrt(Cd) * deltaq
      # Update corrected wind speed for gustiness
-     Ucor = np.where(zeta<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25, zeta = zeta), u)
+     Ucor = xr.where(zeta<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25, zeta = zeta), u)
      if method == 'seaice':
-       Ucor = np.where(zeta>0, UG(method='jordan', u = u, zeta = zeta), Ucor)
+       Ucor = xr.where(zeta>0, UG(method='jordan', u = u, zeta = zeta), Ucor)
      # Cool-skin is not implemented
      count = count + 1
    # Webb correction, precipitation correction and warm-layer corrections should be included when getting out of the loop 
@@ -1225,12 +1226,12 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
 
     # Monin-Obukhov length above a mixed ice-ocean surface
     ustar = unp.sqrt(ustar2)
-    thetastar = np.where(ustar == 0., 0., ustarthetastar/ustar)
-    qstar = np.where(ustar == 0., 0., ustarqstar/ustar)
+    thetastar = xr.where(ustar == 0., 0., ustarthetastar/ustar)
+    qstar = xr.where(ustar == 0., 0., ustarqstar/ustar)
     lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
   
     # Stability correction depends on Monin-Obukov length
-    zeta = np.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
+    zeta = xr.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
     (psiM, psiH) = PSI(zeta, stab = 'grachev', unstab = 'grachev2000')
 
     # Transfer coefficients depend on neutral transfer coefficients and stability corrections
