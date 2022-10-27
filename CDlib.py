@@ -389,13 +389,13 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
          # There is a gap in Liu et al (1979) - no values for a/b are given for 0.825 < rstar < 0.925.
          # Surely a typo, but between 0.825 and 0.925, I arbitrarily chose 0.825 as boundary between two
          # consecutive segments.
-         a = np.where(np.isnan(rstar),np.nan,a)
-         b = np.where(np.isnan(rstar),np.nan,b)
+         a = np.where(np.isnan(rstar.astype(float)),np.nan,a)
+         b = np.where(np.isnan(rstar.astype(float)),np.nan,b)
        elif s == 'Q':
          a = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0.292, np.where(rstar<0.825, 1.808, np.where(rstar<3., 1.393, np.where(rstar<10., 1.956, np.where(rstar<30., 4.994, 30.79))))))
          b = np.where(rstar<0, np.nan, np.where(rstar<0.11, 0, np.where(rstar<0.825, 0.826, np.where(rstar<3., -0.528, np.where(rstar<10., -0.870, np.where(rstar<30., -1.297, -1.845))))))
-         a = np.where(np.isnan(rstar),np.nan,a)
-         b = np.where(np.isnan(rstar),np.nan,b)
+         a = np.where(np.isnan(rstar.astype(float)),np.nan,a)
+         b = np.where(np.isnan(rstar.astype(float)),np.nan,b)
        else:
          sys.exit('s should be T for temperature or Q for humidity')
        zs = meteolib.NU(T)/ustar* a*rstar**b  
@@ -410,16 +410,16 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
          b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.25, np.where(rstar<2.5, 0.149, 0.317)))
          b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.55, -0.565)))
          b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.183)))
-         b0 = np.where(np.isnan(rstar),np.nan,b0)
-         b1 = np.where(np.isnan(rstar),np.nan,b1)
-         b2 = np.where(np.isnan(rstar),np.nan,b2)
+         b0 = np.where(np.isnan(rstar.astype(float)),np.nan,b0)
+         b1 = np.where(np.isnan(rstar.astype(float)),np.nan,b1)
+         b2 = np.where(np.isnan(rstar.astype(float)),np.nan,b2)
        elif s == 'Q':
          b0 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 1.61, np.where(rstar<2.5, 0.351, 0.396)))
          b1 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, -0.628, -0.512)))
          b2 = np.where(rstar<0, np.nan, np.where(rstar<=0.135, 0., np.where(rstar<2.5, 0., -0.18)))
-         b0 = np.where(np.isnan(rstar),np.nan,b0)
-         b1 = np.where(np.isnan(rstar),np.nan,b1)
-         b2 = np.where(np.isnan(rstar),np.nan,b2)
+         b0 = np.where(np.isnan(rstar.astype(float)),np.nan,b0)
+         b1 = np.where(np.isnan(rstar.astype(float)),np.nan,b1)
+         b2 = np.where(np.isnan(rstar.astype(float)),np.nan,b2)
        else:
          sys.exit('s should be T for temperature or Q for humidity')
        zs = z0*unp.exp(b0 + b1*unp.log(rstar) + b2*unp.log(rstar)**2)
@@ -468,7 +468,7 @@ def ZS(method=None, deltas=None, sstar=None, psi=None, CSN=None, z0=None, z=None
          zs = np.where(ustar>0.23, 0.2*meteolib.NU(T)/(ustar-0.2) + 9*10**(-6), 0.0205*ustar**2/g+0.294*meteolib.NU(T)/ustar)
        else:
          sys.exit('s should be T for temperature or Q for humidity')
-       zs = np.where(np.isnan(ustar),np.nan,zs)
+       zs = np.where(np.isnan(ustar.astype(float)),np.nan,zs)
      else:
        sys.exit('With option method = \'mondonredelsperger\', input ustar, T and s are required.')
 
