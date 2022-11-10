@@ -198,7 +198,9 @@ def Z0(method=None, u=None, ustar=None, psi=None, CDN=None, z=None, T=None, alph
      if CDN is not None and z is not None:
        CDN = np.where(unp.nominal_values(CDN)==0,np.nan,CDN)
        CDN = np.where(unp.nominal_values(CDN)==np.inf,np.nan,CDN)
-       z0 = z/unp.exp(unp.sqrt(k**2/CDN))
+       tmp = unp.sqrt(k**2/CDN)
+       tmp = np.where(tmp>700.,np.nan,tmp)
+       z0 = z/unp.exp(tmp)
      else: 
        sys.exit('With option method = \'CN\', input CDN and z are required.')
 
@@ -1210,6 +1212,16 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
 
     else:
       sys.exit('Not coded yet')
+
+    # Whenever the form drag contribution is negligible, switching from neutral
+    # drag coefficients to the associated roughnesses lead to overflows that
+    # have to be avoided by setting those values to NaN.
+    # We set them back to 0 here to avoid perfectly relevant data points to
+    # become NaN only because there is no form drag.
+
+    Cdn = np.where(np.isnan(unp.nominal_values(Cdn)),0,Cdn)
+    Chn = np.where(np.isnan(unp.nominal_values(Chn)),0,Chn)
+    Cen = np.where(np.isnan(unp.nominal_values(Cen)),0,Cen)
 
     deltatheta = theta - thetas
     deltaq = q - qs
