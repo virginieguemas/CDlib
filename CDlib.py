@@ -1014,7 +1014,7 @@ def BULK(zu, zt, u, theta, thetas, q, qs, T, method='coare2.5') :
      # Fairall et al 2003 use T instead of thetav in the estimate of beta = g/thetav
      Rb = xr.where(unp.nominal_values(Rb)==4.5,np.nan,Rb)
      zeta = 10*Rb/(1+Rb/(-4.5))
-     (psiM, psiH) = PSI(zeta, gamma = 4.7, stab='beljaars-holtslag', unstab='grachev2000')
+     (psiM, psiH) = PSI(zeta, zeta, gamma = 4.7, stab='beljaars-holtslag', unstab='grachev2000')
      cd = CD (CDN = cdn, psi = psiM)
      ch = CS (CDN = cdn, CSN = chn, psiM = psiM, psiH = psiH)
      ce = CS (CDN = cdn, CSN = cen, psiM = psiM, psiH = psiH)
@@ -1077,7 +1077,7 @@ def BULK(zu, zt, u, theta, thetas, q, qs, T, method='coare2.5') :
 
    return {'ustar':ustar, 'qstar':qstar, 'thetastar':thetastar, 'CDN':Cdn, 'CHN':Chn, 'CEN':Cen}
 ################################################################################
-def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, theta, thetas, q, qs, T, method='lupkesgryanik15', CDNo=None, CDNi=None, CHNo=None, CHNi=None, CENo=None, CENi=None, ce=0.4, beta=1, hfc=0.41, D=8) :
+def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, zu, zt, u, theta, thetas, q, qs, T, method='lupkesgryanik15', CDNo=None, CDNi=None, CHNo=None, CHNi=None, CENo=None, CENi=None, ce=0.4, beta=1, hfc=0.41, D=8) :
     """
     This function estimates the form drag contribution to the turbulent fluxes above a mixed 
     surface of ocean and sea ice and returns the sum of this form drag contribution and the
@@ -1091,11 +1091,12 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
    - the temperature scaling parameter above the ice thetastarI (in Kelvin),
    - the humidity scaling parameter above the ocean qstarO (in kg.kg-1),
    - the humidity scaling parameter above the ice qstarI (in kg.kg-1),
-   - the atmospheric measurement height z (in m),
-   - the wind speed at height z (in m.s-1),
-   - the potential temperature at height z (in Kelvin),
+   - the atmospheric measurement height zu for wind (in m),
+   - the atmospheric measurement height zt for temperatur and humidity (in m),
+   - the wind speed at height zu (in m.s-1),
+   - the potential temperature at height zt (in Kelvin),
    - the potential temperature at the surface (in Kelvin),
-   - the specific humidity at height z (in kg.kg-1),
+   - the specific humidity at height zt (in kg.kg-1),
    - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea,
    - the layer-averaged temperature T (in Kelvin),
    - the method : 'andreas10' for Andreas et al (2010), deduced from their total CDN form (eq. 5.2)
@@ -1133,8 +1134,9 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
 
     Author : Virginie Guemas - July 2022
 
-    Modified : October 2022 - Virginie Guemas - Added andreas10, lupkesbirnbaum05, lupkesgryanik15 options
-                                              - Amended lupkes12 to account for input CDNo instead of default.
+    Modified : October 2022  - Virginie Guemas - Added andreas10, lupkesbirnbaum05, lupkesgryanik15 options
+                                               - Amended lupkes12 to account for input CDNo instead of default.
+               February 2023 - Virginie Guemas - Allow to use different heights for wind and temp/humidity 
     """
 
     # What is called Cdn, Chn and Cen in the following are the form-induced neutral coefficients.
@@ -1154,7 +1156,7 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
         print("Using the default z0w value of 0.000327 for z0 above ocean")
         z0w = 0.000327                     # See section 3.1.5 in Lupkes et al (2012)
       else:
-        z0w = Z0(method = 'CN' , CDN = CDNo, z = z)
+        z0w = Z0(method = 'CN' , CDN = CDNo, z = zu)
 
       Cdn = ce/2 * (unp.log(hfc/z0w)/unp.log(10/z0w))**2 * hfc/D * (1-Ci)**beta * Ci
                                            # Eqs (35) and (36) in Lupkes et al (2012)
@@ -1162,55 +1164,55 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
       Cen = 0.
 
       if method == 'lupkesgryanik15':
-        z0fw = Z0(method = 'CN' , CDN = Cdn, z = z)  
+        z0fw = Z0(method = 'CN' , CDN = Cdn, z = zu)  
         # Form-induced aerodynamical roughness over water
         if CDNi is None:
           print("Using the default z0i value of 0.000228 for z0 above ocean")
           z0i = 0.000228 # ideal value for inner Arctic, 0.000454 would be better for MIZ according to LG15
         else:
-          z0i = Z0(method = 'CN' , CDN = CDNi, z = z)
+          z0i = Z0(method = 'CN' , CDN = CDNi, z = zu)
         Cdni = ce/2 * (unp.log(hfc/z0i)/unp.log(10/z0i))**2 * hfc/D * (1-Ci)**beta * Ci
         # Eq (21) and (41) in Lupkes and Gryanik (2015)
         # The e factor does not appear in the logarithm because it is not there in Lupkes et al (2012)
         # and I am not sure why it appears in Lupkes and Gryanik (2015)
-        z0fi = Z0(method = 'CN' , CDN = Cdni, z = z)
+        z0fi = Z0(method = 'CN' , CDN = Cdni, z = zu)
         # Form-induced aerodynamical roughness over ice
         Cdn = Cdn * (1-Ci) + Ci * Cdni
 
         if CHNi is None:
           print("Using the default value of 0.00015 for neutral skin heat transfer coefficient above ocean")
-          zhi = ZS(method = 'CN', CSN = 0.0015, z0 = z0i , z = z)
+          zhi = ZS(method = 'CN', CSN = 0.0015, z0 = z0i , z = zt)
         else:
-          zhi = ZS(method = 'CN', CSN = CHNi, z0 = z0i , z = z) 
+          zhi = ZS(method = 'CN', CSN = CHNi, z0 = z0i , z = zt) 
         # Skin scalar roughness above ice for heat
         if CHNo is None:
           print("Using the default value of 0.00015 for neutral skin heat transfer coefficient above ice")
-          zhw = ZS(method = 'CN', CSN = 0.0015, z0 = z0w , z = z)
+          zhw = ZS(method = 'CN', CSN = 0.0015, z0 = z0w , z = zt)
         else:
-          zhw = ZS(method = 'CN', CSN = CHNo, z0 = z0w , z = z)
+          zhw = ZS(method = 'CN', CSN = CHNo, z0 = z0w , z = zt)
         # Skin scalar roughness above water for heat
         zhfi = zhi/z0i*z0fi 
         zhfw = zhw/z0w*z0fw 
         # Form-induced scalar roughness for heat above ice and water following Eq (59) in LG15
-        Chn = Ci * CSN(zs = zhfi,z0 = z0fi,z = z) + (1-Ci) * CSN(zs = zhfw,z0 = z0fw,z = z)
+        Chn = Ci * CSN(zs = zhfi,z0 = z0fi,z = zt) + (1-Ci) * CSN(zs = zhfw,z0 = z0fw,z = zt)
         # Weighted average of form-induced heat transfer coefficients above ice and water 
 
         if CENi is None:
           print("Using the same scalar roughness over ice for heat and humidity as default")
           zqi = zhi
         else:
-          zqi = ZS(method = 'CN', CSN = CENi, z0 = z0i , z = z) 
+          zqi = ZS(method = 'CN', CSN = CENi, z0 = z0i , z = zt) 
         # Skin scalar roughness above ice for humidity
         if CENo is None:
           print("Using the same scalar roughness over water for heat and humidity as default")
           zqw = zhw
         else:
-          zqw = ZS(method = 'CN', CSN = CENo, z0 = z0w , z = z) 
+          zqw = ZS(method = 'CN', CSN = CENo, z0 = z0w , z = zt) 
         # Skin scalar roughness above water for humidity
         zqfi = zqi/z0i*z0fi 
         zqfw = zqw/z0w*z0fw 
         # Form-induced scalar roughness for humidity above ice and water following Eq (59) in LG15
-        Cen = Ci * CSN(zs = zqfi,z0 = z0fi,z = z) + (1-Ci) * CSN(zs = zqfw,z0 = z0fw,z = z)
+        Cen = Ci * CSN(zs = zqfi,z0 = z0fi,z = zt) + (1-Ci) * CSN(zs = zqfw,z0 = z0fw,z = zt)
         # Weighted average of form-induced humidity transfer coefficients above ice and water 
 
     else:
@@ -1246,8 +1248,9 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, z, u, 
     lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
   
     # Stability correction depends on Monin-Obukov length
-    zeta = xr.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
-    (psiM, psiH) = PSI(zeta, stab = 'grachev', unstab = 'grachev2000')
+    zetaU = xr.where((thetastar==0.)&(qstar==0.), 0., ZETA(zu, lmo))
+    zetaT = xr.where((thetastar==0.)&(qstar==0.), 0., ZETA(zt, lmo))
+    (psiM, psiH) = PSI(zetaT, zetaU, stab = 'grachev', unstab = 'grachev2000')
 
     # Transfer coefficients depend on neutral transfer coefficients and stability corrections
     Cd = CD (CDN = Cdn, psi = psiM)
