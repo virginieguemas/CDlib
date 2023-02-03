@@ -656,9 +656,9 @@ def LMOapprox(ustar, T, thetastar=None, qstar=None, Q0=None, E0=None) :
 
    return Lmo
 ################################################################################
-def RB(thetav, Dthetav, u, v, z) :
+def RB(thetav, Dthetav, u, v, zt, zu) :
    """
-   This function computes the Bulk Richardson number as a function of the virtual potential temperature thetav (in Kelvin) and wind speed horizontal components u and v (in m/s) at height z (in m) and the difference in virtual potential temperature between the height z and the surface Dthetav (in Kelvin).
+   This function computes the Bulk Richardson number as a function of the virtual potential temperature thetav (in Kelvin) at height zt (in m) and wind speed horizontal components u and v (in m/s) at height zu (in m) and the difference in virtual potential temperature between the height zt and the surface Dthetav (in Kelvin).
 
    Author : Virginie Guemas - October 2020 
    """
@@ -666,7 +666,7 @@ def RB(thetav, Dthetav, u, v, z) :
    meteolib.check_T(thetav)
  
    wspd2 = np.where(unp.nominal_values(u**2+v**2)==0,np.nan,u**2+v**2)
-   Rb = g/thetav * Dthetav*z/wspd2
+   Rb = g/thetav * (Dthetav*zu**2)/(wspd2*zt)
 
    return Rb
 ################################################################################
@@ -1092,7 +1092,7 @@ def FORMDRAG (Ci, ustarO, ustarI, thetastarO, thetastarI, qstarO, qstarI, zu, zt
    - the humidity scaling parameter above the ocean qstarO (in kg.kg-1),
    - the humidity scaling parameter above the ice qstarI (in kg.kg-1),
    - the atmospheric measurement height zu for wind (in m),
-   - the atmospheric measurement height zt for temperatur and humidity (in m),
+   - the atmospheric measurement height zt for temperature and humidity (in m),
    - the wind speed at height zu (in m.s-1),
    - the potential temperature at height zt (in Kelvin),
    - the potential temperature at the surface (in Kelvin),
