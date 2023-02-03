@@ -965,18 +965,19 @@ def F(Rb, CDN, z, var='momentum', author='Louis') :
 
    return f
 ################################################################################
-def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
+def BULK(zu, zt, u, theta, thetas, q, qs, T, method='coare2.5') :
    """
    This function applies one of the COARE or ECUME algorithms to estimate bulk
    turbulent fluxes of velocity, heat and humidity as well as the associated transfer 
    coefficients above ocean. It can also use a combination of the most recent parametrizations
    of scalar and aerodynamic roughness and stability function over sea ice to estimate
    those bulk turbulent fluxes and transfer coefficients over sea ice. It needs :
-   - the atmospheric measurement height z (in m),
-   - the wind speed at height z (in m.s-1),
-   - the potential temperature at height z (in Kelvin),
+   - the atmospheric measurement height zu for wind (in m),
+   - the atmospheric measurement height zt for temperature and humidity (in m),
+   - the wind speed at height zu (in m.s-1),
+   - the potential temperature at height zt (in Kelvin),
    - the potential temperature at the surface (in Kelvin),
-   - the specific humidity at height z (in kg.kg-1),
+   - the specific humidity at height zt (in kg.kg-1),
    - the specific humidity at the surface (in kg.kg-1) - with the 2% reduction over sea
    - the layer-averaged temperature T (in Kelvin).
    - the method : 'coare2.5', 'coare3.0' or 'seaice'. Default : 'coare2.5'.
@@ -988,6 +989,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    Author : Virginie Guemas - January 2021  
    Modified : January 2021  - Sebastien Blein - Uncertainty propagation
               July 2022     - Virginie Guemas - Fluxes and coefficients above sea ice
+              February 2023 - Virginie Guemas - Allow different z for wind and temp
    """
    deltatheta = theta - thetas
    deltaq = q - qs
@@ -1008,7 +1010,7 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
 
    elif method == 'coare3.0':
      # First guess based on Grachev and Fairall (1997) estimate of stability
-     Rb = RB(thetav = T, Dthetav = meteolib.Thetav(theta,q) - meteolib.Thetav(thetas,qs), u = u, v = 0, z = z) 
+     Rb = RB(thetav = T, Dthetav = meteolib.Thetav(theta,q) - meteolib.Thetav(thetas,qs), u = u, v = 0, zu = zu, zt = zt) 
      # Fairall et al 2003 use T instead of thetav in the estimate of beta = g/thetav
      Rb = xr.where(unp.nominal_values(Rb)==4.5,np.nan,Rb)
      zeta = 10*Rb/(1+Rb/(-4.5))
@@ -1037,7 +1039,8 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
    while count < ncount[method]:
      # Monin-Obukhov length depends on turbulent fluxes
      lmo = LMOapprox (ustar = ustar, T = T, thetastar = thetastar, qstar = qstar)
-     zeta = xr.where((thetastar==0.)&(qstar==0.), 0., ZETA(z, lmo))
+     zetaT = xr.where((thetastar==0.)&(qstar==0.), 0., ZETA(zt, lmo))
+     zetaU = xr.where((thetastar==0.)&(qstar==0.), 0., ZETA(zu, lmo))
      # Aerodynamic roughness depends on friction velocity
      z0 = Z0(method = z0mod[method], alpha=0.011, u = u, ustar = ustar, T = T)
      # Roughness Reynolds number depends on friction velocity and aerodynamic roughness
@@ -1046,11 +1049,11 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      z0T = ZS(method = zsmod[method], z0 = z0, T = T, rstar = rstar, ustar = ustar, s='T')
      z0q = ZS(method = zsmod[method], z0 = z0, T = T, rstar = rstar, ustar = ustar, s='Q')
      # Neutral transfer coefficients depend on roughness lengths
-     Cdn = CDN (z0 = z0, z = z)
-     Chn = CSN (zs = z0T, z0 = z0, z = z) 
-     Cen = CSN (zs = z0q, z0 = z0, z = z) 
+     Cdn = CDN (z0 = z0, z = zu)
+     Chn = CSN (zs = z0T, z0 = z0, z = zt) 
+     Cen = CSN (zs = z0q, z0 = z0, z = zt) 
      # Stability correction depends on Monin-Obukov length
-     (psiM, psiH) = PSI(zeta, gamma = 4.7, stab = psistab[method], unstab = psiunstab[method])
+     (psiM, psiH) = PSI(zetaT, zetaU, gamma = 4.7, stab = psistab[method], unstab = psiunstab[method])
                   # I am unsure about the 4.7 factor which is not stated clearly in Fairall et al 1996
      # Transfer coefficients depend on neutral transfer coefficients and stability corrections
      Cd = CD (CDN = Cdn, psi = psiM)
@@ -1061,9 +1064,9 @@ def BULK(z, u, theta, thetas, q, qs, T, method='coare2.5') :
      thetastar = Ch/unp.sqrt(Cd) * deltatheta
      qstar = Ce/unp.sqrt(Cd) * deltaq
      # Update corrected wind speed for gustiness
-     Ucor = xr.where(zeta<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25, zeta = zeta), u)
+     Ucor = xr.where(zetaU<0, UG(method='fairall', u = u, h=600, T = T, E0 = -ustar*qstar, Q0 = -ustar*thetastar, beta = 1.25, zeta = zetaU), u)
      if method == 'seaice':
-       Ucor = xr.where(zeta>0, UG(method='jordan', u = u, zeta = zeta), Ucor)
+       Ucor = xr.where(zetaU>0, UG(method='jordan', u = u, zeta = zetaU), Ucor)
      # Cool-skin is not implemented
      count = count + 1
    # Webb correction, precipitation correction and warm-layer corrections should be included when getting out of the loop 
