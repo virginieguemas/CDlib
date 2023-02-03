@@ -784,15 +784,16 @@ def ZETA(z,Lmo) :
 
    return zeta
 ################################################################################
-def PSI(zeta, gamma=5, stab=None, unstab=None) :
+def PSI(zetaT, zetaU, gamma=5, stab=None, unstab=None) :
    """
    This function computes a stability correction as a function of Monin-Obukhov length. It takes four arguments:
-   - zeta = z (height) / Lmo (Monin-Obukhov length)
-   - stab = formulation for stable regimes : 'dyer-hicks'  -- Dyer and Hicks (1970)
-                                             'lettau'      -- Lettau (1979) 
-                                             'holtslag-bruin' -- Holtslag and de Bruin (1988)
+   - zetaT = z (height for temperature/humidity) / Lmo (Monin-Obukhov length)
+   - zetaU = z (height for wind) / Lmo (Monin-Obukhov length)
+   - stab = formulation for stable regimes : 'dyer-hicks'        -- Dyer and Hicks (1970)
+                                             'lettau'            -- Lettau (1979) 
+                                             'holtslag-bruin'    -- Holtslag and de Bruin (1988)
                                              'beljaars-holtslag' -- Beljaars and Holtslag (1991)
-                                             'grachev'     -- Grachev (2007)
+                                             'grachev'           -- Grachev (2007)
    - unstab = formulation for unstable regimes : 'businger-dyer' -- Paulson (1970)
                                                  'fairall1996'   -- Fairall et al (1996)
                                                  'grachev2000'   -- Grachev et al (2000)
@@ -813,13 +814,15 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
 
    ###############################
    # zeta discrimination between stab and unstab in order to avoid error with unp function when math domain is not Real.
-   zeta_stab = np.where(zeta>0,zeta,np.nan)
-   zeta_unstab = np.where(zeta<0,zeta,np.nan)
+   zeta_stabT = np.where(zetaT>0,zetaT,np.nan)
+   zeta_unstabT = np.where(zetaT<0,zetaT,np.nan)
+   zeta_stabU = np.where(zetaU>0,zetaU,np.nan)
+   zeta_unstabU = np.where(zetaU<0,zetaU,np.nan)
 
    ###############################
    if unstab == 'businger-dyer':
-     phiM = (1 - 16*zeta_unstab)**(-0.25)
-     phiH = (1 - 16*zeta_unstab)**(-0.5)
+     phiM = (1 - 16*zeta_unstabU)**(-0.25)
+     phiH = (1 - 16*zeta_unstabT)**(-0.5)
 
      psiM = 2*unp.log((1+phiM**(-1))/2) + unp.log((1+phiM**(-2))/2) - 2*unp.arctan(phiM**(-1)) + np.pi/2
      psiH = 2*unp.log((1+phiH**(-1))/2)
@@ -836,31 +839,37 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
      psiH = None
    ################################
    elif unstab == 'fairall1996':
-     y = (1 - 12.87*zeta_unstab)**(1/3)
+     yU = (1 - 12.87*zeta_unstabU)**(1/3)
+     yT = (1 - 12.87*zeta_unstabT)**(1/3)
 
-     psi = 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
+     tmpU = 1.5*unp.log((yU**2+yU+1)/3) - unp.sqrt(3)*unp.arctan((2*yU+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
+     tmpT = 1.5*unp.log((yT**2+yT+1)/3) - unp.sqrt(3)*unp.arctan((2*yT+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
 
-     psiM = 1/(1+zeta_unstab**2)*PSI(zeta_unstab, stab = stab, unstab = 'businger-dyer')[0] + zeta_unstab**2/(1+zeta_unstab**2)*psi
-     psiH = 1/(1+zeta_unstab**2)*PSI(zeta_unstab, stab = stab, unstab = 'businger-dyer')[1] + zeta_unstab**2/(1+zeta_unstab**2)*psi
+     psi = PSI(zeta_unstabT, zeta_unstabU, stab = stab, unstab = 'businger-dyer')
+
+     psiM = 1/(1+zeta_unstabU**2)*psi[0] + zeta_unstabU**2/(1+zeta_unstabU**2)*tmpU
+     psiH = 1/(1+zeta_unstabT**2)*psi[1] + zeta_unstabT**2/(1+zeta_unstabT**2)*tmpT
      # psi is np.nan when zeta >= 0
    ################################
    elif unstab == 'grachev2000':
      a={'m':10.15,'h':34.15}
-     psi={}
-     for s in ('m','h'):
-       y = (1 - a[s]*zeta_unstab)**(1/3)
+     yT = (1 - a[s]*zeta_unstabT)**(1/3)
+     yU = (1 - a[s]*zeta_unstabU)**(1/3)
 
-       psi[s] = 1.5*unp.log((y**2+y+1)/3) - unp.sqrt(3)*unp.arctan((2*y+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
+     tmpT = 1.5*unp.log((yT**2+yT+1)/3) - unp.sqrt(3)*unp.arctan((2*yT+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
+     tmpU = 1.5*unp.log((yU**2+yU+1)/3) - unp.sqrt(3)*unp.arctan((2*yU+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
 
-     psiM = 1/(1+zeta_unstab**2)*PSI(zeta_unstab, stab = stab, unstab = 'businger-dyer')[0] + zeta_unstab**2/(1+zeta_unstab**2)*psi['m']
-     psiH = 1/(1+zeta_unstab**2)*PSI(zeta_unstab, stab = stab, unstab = 'businger-dyer')[1] + zeta_unstab**2/(1+zeta_unstab**2)*psi['h']
+     psi = PSI(zeta_unstabT, zeta_unstabU, stab = stab, unstab = 'businger-dyer')
+
+     psiM = 1/(1+zeta_unstabU**2)*psi[0] + zeta_unstabU**2/(1+zeta_unstabU**2)*tmpU
+     psiH = 1/(1+zeta_unstabT**2)*psi[1] + zeta_unstabT**2/(1+zeta_unstabT**2)*tmpT
      # psi is np.nan when zeta >= 0
    ################################  
    elif  unstab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
 
-     psiM = -(a * zeta_unstab + b*(zeta_unstab - c/d) * unp.exp(-d * zeta_unstab) + b*c/d)
-     psiH = -(a * zeta_unstab + b*(zeta_unstab - c/d) * unp.exp(-d * zeta_unstab) + b*c/d)
+     psiM = -(a * zeta_unstabU + b*(zeta_unstabU - c/d) * unp.exp(-d * zeta_unstabU) + b*c/d)
+     psiH = -(a * zeta_unstabT + b*(zeta_unstabT - c/d) * unp.exp(-d * zeta_unstabT) + b*c/d)
      # Beljaars and Holtslag do not propose an option for unstable cases but only for stable cases. This formulation is here
      # only to reproduce Elvidge et al (2016).
    else:
@@ -868,20 +877,22 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
    ################################
    ################################
    if stab == 'dyer-hicks':
-     psiM = np.where (zeta>0, -gamma*zeta_stab, psiM)
-     psiH = np.where (zeta>0, -gamma*zeta_stab, psiM)
+     psiM = np.where (zetaU>0, -gamma*zeta_stabU, psiM)
+     psiH = np.where (zetaT>0, -gamma*zeta_stabT, psiH)
    ################################
    elif stab == 'lettau':
-     x = 1 + 4.5*zeta_stab
+     xT = 1 + 4.5*zeta_stabT
+     xU = 1 + 4.5*zeta_stabU
 
-     psiM = np.where (zeta>0, unp.log((x**0.5+1)/2) + 2*unp.log((x**0.25+1)/2) -2*unp.arctan(x**0.25) + np.pi/2 + 4/3*(1-x**0.75), psiM)
-     psiH = np.where (zeta>0, 2*unp.log((x**0.25+1)/2) -2*(x**1.5/3 + x**0.5 - 4/3), psiH)
+     psiM = np.where (zetaU>0, unp.log((xU**0.5+1)/2) + 2*unp.log((xU**0.25+1)/2) -2*unp.arctan(xU**0.25) + np.pi/2 + 4/3*(1-xU**0.75), psiM)
+     psiH = np.where (zetaT>0, 2*unp.log((xT**0.25+1)/2) -2*(xT**1.5/3 + xT**0.5 - 4/3), psiH)
    ################################
    elif stab == 'holtslag-bruin':
-     psi = -3.75/0.35 - 0.7*zeta_stab + 3.75/0.35*unp.exp(-0.35*zeta_stab) -0.75*zeta_stab*unp.exp(-0.35*zeta_stab)
+     psiT = -3.75/0.35 - 0.7*zeta_stabT + 3.75/0.35*unp.exp(-0.35*zeta_stabT) -0.75*zeta_stabT*unp.exp(-0.35*zeta_stabT)
+     psiU = -3.75/0.35 - 0.7*zeta_stabU + 3.75/0.35*unp.exp(-0.35*zeta_stabU) -0.75*zeta_stabU*unp.exp(-0.35*zeta_stabU)
 
-     psiM = np.where (zeta>0, psi, psiM)
-     psiH = np.where (zeta>0, psi, psiH)
+     psiM = np.where (zetaU>0, psiU, psiM)
+     psiH = np.where (zetaT>0, psiT, psiH)
    ################################
    elif stab == 'holtslag1990':
        # I need to integrate the phi
@@ -891,22 +902,22 @@ def PSI(zeta, gamma=5, stab=None, unstab=None) :
    elif stab == 'beljaars-holtslag':
      a,b,c,d = 1.,0.667,5.,0.35
 
-     psiM = np.where (zeta>0, -(a * zeta_stab + b*(zeta_stab - c/d) * unp.exp(-d * zeta_stab) + b*c/d), psiM)
-     psiH = np.where (zeta>0, -((1+2.*a*zeta_stab/3)**(3./2) + b*(zeta_stab-c/d)*unp.exp(-d*zeta_stab) + b*c/d - 1), psiH)
+     psiM = np.where (zetaU>0, -(a * zeta_stabU + b*(zeta_stabU - c/d) * unp.exp(-d * zeta_stabU) + b*c/d), psiM)
+     psiH = np.where (zetaT>0, -((1+2.*a*zeta_stabT/3)**(3./2) + b*(zeta_stabT-c/d)*unp.exp(-d*zeta_stabT) + b*c/d - 1), psiH)
    ################################
    elif stab == 'grachev':
-     x = (zeta_stab+1)**(1/3)
+     xU = (zeta_stabU+1)**(1/3)
 
-     psiM = np.where (zeta>0, -19.5*(x-1) + 3.25*0.3**(1/3)*(2*unp.log((x+0.3**(1/3))/(1+0.3**(1/3))) - unp.log((x**2-0.3**(1/3)*x+0.3**(2/3))/(1-0.3**(1/3)+0.3**(2/3))) +2*unp.sqrt(3)*(unp.arctan((2*x-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3))) -unp.arctan((2-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3))))) , psiM)
-     psiH = np.where (zeta>0, -2.5*unp.log(1+3*zeta_stab+zeta_stab**2) +5/(2*unp.sqrt(5))*(unp.log((2*zeta_stab+3-unp.sqrt(5))/(2*zeta_stab+3+unp.sqrt(5))) -unp.log((3-unp.sqrt(5))/(3+unp.sqrt(5)))), psiH)
+     psiM = np.where (zetaU>0, -19.5*(xU-1) + 3.25*0.3**(1/3)*(2*unp.log((xU+0.3**(1/3))/(1+0.3**(1/3))) - unp.log((xU**2-0.3**(1/3)*xU+0.3**(2/3))/(1-0.3**(1/3)+0.3**(2/3))) +2*unp.sqrt(3)*(unp.arctan((2*xU-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3))) -unp.arctan((2-0.3**(1/3))/(unp.sqrt(3)*0.3**(1/3))))) , psiM)
+     psiH = np.where (zetaT>0, -2.5*unp.log(1+3*zeta_stabT+zeta_stabT**2) +5/(2*unp.sqrt(5))*(unp.log((2*zeta_stabT+3-unp.sqrt(5))/(2*zeta_stabT+3+unp.sqrt(5))) -unp.log((3-unp.sqrt(5))/(3+unp.sqrt(5)))), psiH)
    ################################
    else:
      sys.exit('This option for stable cases is not coded yet.')
    ################################
    ################################
    # To avoid np.nan for zeta = 0
-   psiM = np.where (zeta == 0., 0., psiM)
-   psiH = np.where (zeta == 0., 0., psiH)
+   psiM = np.where (zetaU == 0., 0., psiM)
+   psiH = np.where (zetaT == 0., 0., psiH)
    
    return (psiM,psiH)
 ################################################################################
@@ -1010,7 +1021,7 @@ def BULK(zu, zt, u, theta, thetas, q, qs, T, method='coare2.5') :
 
    elif method == 'coare3.0':
      # First guess based on Grachev and Fairall (1997) estimate of stability
-     Rb = RB(thetav = T, Dthetav = meteolib.Thetav(theta,q) - meteolib.Thetav(thetas,qs), u = u, v = 0, zu = zu, zt = zt) 
+     Rb = RB(thetav = T, Dthetav = meteolib.Thetav(theta,q) - meteolib.Thetav(thetas,qs), u = u, v = 0, zt = zt, zu = zu) 
      # Fairall et al 2003 use T instead of thetav in the estimate of beta = g/thetav
      Rb = xr.where(unp.nominal_values(Rb)==4.5,np.nan,Rb)
      zeta = 10*Rb/(1+Rb/(-4.5))
