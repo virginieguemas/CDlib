@@ -853,8 +853,8 @@ def PSI(zetaT, zetaU, gamma=5, stab=None, unstab=None) :
    ################################
    elif unstab == 'grachev2000':
      a={'m':10.15,'h':34.15}
-     yT = (1 - a[s]*zeta_unstabT)**(1/3)
-     yU = (1 - a[s]*zeta_unstabU)**(1/3)
+     yT = (1 - a['h']*zeta_unstabT)**(1/3)
+     yU = (1 - a['m']*zeta_unstabU)**(1/3)
 
      tmpT = 1.5*unp.log((yT**2+yT+1)/3) - unp.sqrt(3)*unp.arctan((2*yT+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
      tmpU = 1.5*unp.log((yU**2+yU+1)/3) - unp.sqrt(3)*unp.arctan((2*yU+1)/unp.sqrt(3)) + np.pi/unp.sqrt(3)
